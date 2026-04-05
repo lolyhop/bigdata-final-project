@@ -88,3 +88,58 @@ _raw_db = os.environ.get("PGDATABASE")
 if _raw_db is None or not isinstance(_raw_db, str) or not _raw_db.strip():
     raise SettingsError("PGDATABASE must be set to a non-empty string.")
 PGDATABASE = _raw_db.strip()
+
+_raw_hdfs = os.environ.get("HDFS_DATA_DIR")
+if _raw_hdfs is None or not str(_raw_hdfs).strip():
+    raise SettingsError("HDFS_DATA_DIR must be set to a non-empty value.")
+HDFS_DATA_DIR = str(_raw_hdfs).strip()
+if "'" in HDFS_DATA_DIR:
+    raise SettingsError("HDFS_DATA_DIR must not contain single quotes.")
+
+_raw_hive_db = os.environ.get("HIVE_DATABASE")
+if (
+    _raw_hive_db is None
+    or not isinstance(_raw_hive_db, str)
+    or not _raw_hive_db.strip()
+):
+    raise SettingsError("HIVE_DATABASE must be set to a non-empty string.")
+HIVE_DATABASE = _raw_hive_db.strip()
+if not _IDENTIFIER_RE.match(HIVE_DATABASE):
+    raise SettingsError(
+        "HIVE_DATABASE must match [a-zA-Z_][a-zA-Z0-9_]*, got {0!r}.".format(
+            HIVE_DATABASE
+        )
+    )
+
+_raw_hive_host = os.environ.get("HIVE_HOST")
+if _raw_hive_host is None or not str(_raw_hive_host).strip():
+    raise SettingsError("HIVE_HOST must be set to a non-empty value.")
+HIVE_HOST = str(_raw_hive_host).strip()
+
+_raw_hive_port = os.environ.get("HIVE_PORT")
+if _raw_hive_port is None or not str(_raw_hive_port).strip():
+    raise SettingsError("HIVE_PORT must be set to a non-empty value.")
+try:
+    HIVE_PORT = int(str(_raw_hive_port).strip())
+except ValueError:
+    raise SettingsError(
+        "HIVE_PORT must be an integer, got {0!r}.".format(_raw_hive_port)
+    )
+
+_raw_hive_user = os.environ.get("HIVE_USER")
+if _raw_hive_user is None or not str(_raw_hive_user).strip():
+    HIVE_USER = None
+else:
+    HIVE_USER = str(_raw_hive_user).strip()
+
+_raw_hive_password = os.environ.get("HIVE_PASSWORD")
+if _raw_hive_password is None or not str(_raw_hive_password).strip():
+    HIVE_PASSWORD = None
+else:
+    HIVE_PASSWORD = str(_raw_hive_password).strip()
+
+_raw_hive_auth = os.environ.get("HIVE_AUTH")
+if _raw_hive_auth is None or not str(_raw_hive_auth).strip():
+    HIVE_AUTH = None
+else:
+    HIVE_AUTH = str(_raw_hive_auth).strip()
