@@ -2,3 +2,5 @@ pylint
 pyspark
 pandas
 streamlit
+asyncpg
+pydantic-settings>=2.0

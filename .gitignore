@@ -172,3 +172,17 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Various data files
+*.json
+*.parquet
+*.csv
+*.txt
+*.xls
+*.xlsx
+*.gz
+*.zst
+*.tar
+
+# Mac OS files
+.DS_Store
