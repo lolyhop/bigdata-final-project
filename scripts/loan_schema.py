@@ -1,8 +1,8 @@
-from __future__ import annotations
+from typing import Tuple
 
-from typing import Final
+from typing_extensions import Final
 
-LOAN_CSV_COLUMNS: Final[tuple[str, ...]] = (
+LOAN_CSV_COLUMNS: Final[Tuple[str, ...]] = (
     "id",
     "loan_amnt",
     "term",

@@ -20,4 +20,4 @@ if [ -z "${DATASET_FILTERED_PATH:-}" ]; then
   exit 1
 fi
 
-python scripts/filter_dataset_for_pg.py
+python3 scripts/filter_dataset_for_pg.py

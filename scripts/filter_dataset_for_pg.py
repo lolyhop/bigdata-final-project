@@ -1,23 +1,21 @@
-"""Stream raw loan CSV and emit a slim UTF-8 CSV for PostgreSQL bulk load."""
-
-from __future__ import annotations
-
 import csv
 import logging
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Final
+from typing import Dict, FrozenSet, List, Optional, Tuple
+
+from typing_extensions import Final
 
 from loan_schema import LOAN_CSV_COLUMNS
-from settings import settings
+import settings
 
 LOGGER = logging.getLogger(__name__)
 
-REQUIRED_HEADERS: Final[frozenset[str]] = frozenset(LOAN_CSV_COLUMNS)
+REQUIRED_HEADERS: Final[FrozenSet[str]] = frozenset(LOAN_CSV_COLUMNS)
 
-OUTPUT_FIELDNAMES: Final[list[str]] = list(LOAN_CSV_COLUMNS)
+OUTPUT_FIELDNAMES: Final[List[str]] = list(LOAN_CSV_COLUMNS)
 
 DATE_FMT_IN: Final[str] = "%b-%Y"
 
@@ -100,7 +98,7 @@ def _to_numeric_string(value: str) -> str:
     return _strip_percent(str(value))
 
 
-def _row_to_output(row: dict[str, str]) -> dict[str, str]:
+def _row_to_output(row: Dict[str, str]) -> Dict[str, str]:
     """Map one input row dict to output column dict.
 
     Args:
@@ -139,7 +137,7 @@ def _row_to_output(row: dict[str, str]) -> dict[str, str]:
     }
 
 
-def _validate_headers(fieldnames: list[str] | None) -> None:
+def _validate_headers(fieldnames: Optional[List[str]]) -> None:
     """Ensure the source CSV contains every column we need.
 
     Args:
@@ -154,11 +152,11 @@ def _validate_headers(fieldnames: list[str] | None) -> None:
     present = {h.strip() for h in fieldnames if h is not None}
     missing = sorted(REQUIRED_HEADERS - present)
     if missing:
-        msg = f"Missing required columns: {', '.join(missing)}"
+        msg = "Missing required columns: {}".format(", ".join(missing))
         raise ValueError(msg)
 
 
-def filter_csv(input_path: Path, output_path: Path) -> tuple[int, int, int]:
+def filter_csv(input_path: Path, output_path: Path) -> Tuple[int, int, int]:
     """Read ``input_path`` in a streaming fashion and write the core CSV.
 
     Args:
@@ -206,7 +204,7 @@ def filter_csv(input_path: Path, output_path: Path) -> tuple[int, int, int]:
 
 
 def main() -> int:
-    """CLI entrypoint; paths come from ``settings`` (repo-root ``.env`` and environment).
+    """CLI entrypoint; paths from the ``settings`` module (``.env`` + environment).
 
     Returns:
         Process exit code (0 on success).
@@ -215,8 +213,8 @@ def main() -> int:
         level=logging.INFO,
         format="%(levelname)s %(message)s",
     )
-    input_path = settings.dataset_input_path
-    output_path = settings.dataset_filtered_path
+    input_path = settings.DATASET_INPUT_PATH
+    output_path = settings.DATASET_FILTERED_PATH
     if not input_path.is_file():
         LOGGER.error("Input file not found: %s", input_path)
         return 1

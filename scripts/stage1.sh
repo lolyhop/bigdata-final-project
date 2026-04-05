@@ -20,7 +20,7 @@ if [ ! -f "$DATASET_FILTERED_PATH" ]; then
   exit 1
 fi
 
-python scripts/load_postgres.py
+python3 scripts/load_postgres.py
 
 if ! command -v sqoop >/dev/null 2>&1; then
   echo "sqoop not found on PATH. Run stage 1 on a cluster edge node or VM with Sqoop installed." >&2
