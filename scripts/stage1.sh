@@ -27,8 +27,8 @@ if ! command -v sqoop >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ -z "${SQOOP_TARGET_DIR:-}" ]; then
-  echo "SQOOP_TARGET_DIR must be set in .env. See .env.example." >&2
+if [ -z "${HDFS_DATA_DIR:-}" ]; then
+  echo "HDFS_DATA_DIR must be set in .env. See .env.example." >&2
   exit 1
 fi
 if [ -z "${HADOOP_CONF_DIR:-}" ]; then
@@ -42,17 +42,20 @@ fi
 export HADOOP_CONF_DIR
 
 SQOOP_NUM_MAPPERS="${SQOOP_NUM_MAPPERS:-4}"
+SQOOP_COMPRESSION_CODEC="${SQOOP_COMPRESSION_CODEC:-org.apache.hadoop.io.compress.SnappyCodec}"
 JDBC_URL="jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}"
 
-echo "Starting Sqoop import of table ${TABLE_NAME} to ${SQOOP_TARGET_DIR} (${SQOOP_NUM_MAPPERS} mappers)."
+echo "Starting Sqoop Parquet import of table ${TABLE_NAME} to ${HDFS_DATA_DIR} (${SQOOP_NUM_MAPPERS} mappers, codec ${SQOOP_COMPRESSION_CODEC})."
 
 sqoop import \
   --connect "${JDBC_URL}" \
   --username "${PGUSER}" \
   --password "${PGPASSWORD}" \
   --table "${TABLE_NAME}" \
-  --target-dir "${SQOOP_TARGET_DIR}" \
+  --target-dir "${HDFS_DATA_DIR}" \
   --delete-target-dir \
+  --as-parquetfile \
+  --compression-codec "${SQOOP_COMPRESSION_CODEC}" \
   --split-by id \
   -m "${SQOOP_NUM_MAPPERS}"
 
