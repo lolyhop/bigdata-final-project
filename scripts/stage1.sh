@@ -41,9 +41,12 @@ if [ -z "${TABLE_NAME:-}" ]; then
 fi
 export HADOOP_CONF_DIR
 
-SQOOP_NUM_MAPPERS="${SQOOP_NUM_MAPPERS:-4}"
-SQOOP_COMPRESSION_CODEC="${SQOOP_COMPRESSION_CODEC:-org.apache.hadoop.io.compress.SnappyCodec}"
+SQOOP_NUM_MAPPERS="4"
+SQOOP_COMPRESSION_CODEC="org.apache.hadoop.io.compress.SnappyCodec"
 JDBC_URL="jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}"
+
+echo "Clearing HDFS directory ${HDFS_DATA_DIR} ..."
+hdfs dfs -rm -rf "${HDFS_DATA_DIR}" 2>/dev/null || true
 
 echo "Starting Sqoop Parquet import of table ${TABLE_NAME} to ${HDFS_DATA_DIR} (${SQOOP_NUM_MAPPERS} mappers, codec ${SQOOP_COMPRESSION_CODEC})."
 
@@ -60,3 +63,14 @@ sqoop import \
   -m "${SQOOP_NUM_MAPPERS}"
 
 echo "Sqoop import finished."
+
+echo "Copying Parquet output file to output/ ..."
+mkdir -p output
+PARQUET_FILE="$(hdfs dfs -ls "${HDFS_DATA_DIR}" 2>/dev/null \
+  | awk '{print $NF}' | grep '\.parquet$' | head -n 1 || true)"
+if [ -n "${PARQUET_FILE}" ]; then
+  hdfs dfs -get -f "${PARQUET_FILE}" output/
+  echo "Saved $(basename "${PARQUET_FILE}") to output/"
+else
+  echo "Warning: no .parquet file found in ${HDFS_DATA_DIR}" >&2
+fi

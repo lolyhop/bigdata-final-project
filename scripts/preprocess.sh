@@ -39,6 +39,10 @@ if [ -z "${FIRST_MEMBER}" ]; then
 fi
 # -j drops archive path so the file lands in DATASET_DIR under its basename.
 unzip -q -o -j "${DATASET_INPUT_PATH}.zip" "${FIRST_MEMBER}" -d "${DATASET_DIR}"
-mv "${DATASET_DIR}/$(basename "${FIRST_MEMBER}")" "${DATASET_INPUT_PATH}"
+EXTRACTED="${DATASET_DIR}/$(basename "${FIRST_MEMBER}")"
+# If the archive member basename matches DATASET_INPUT_PATH, unzip already wrote the final path.
+if [ ! "${EXTRACTED}" -ef "${DATASET_INPUT_PATH}" ]; then
+  mv "${EXTRACTED}" "${DATASET_INPUT_PATH}"
+fi
 
 python3 scripts/filter_dataset_for_pg.py
