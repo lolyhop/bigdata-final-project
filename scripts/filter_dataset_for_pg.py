@@ -4,18 +4,43 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, FrozenSet, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from typing_extensions import Final
 
-from loan_schema import LOAN_CSV_COLUMNS
 import settings
 
 LOGGER = logging.getLogger(__name__)
 
-REQUIRED_HEADERS: Final[FrozenSet[str]] = frozenset(LOAN_CSV_COLUMNS)
 
-OUTPUT_FIELDNAMES: Final[List[str]] = list(LOAN_CSV_COLUMNS)
+LOAN_CSV_COLUMNS: Final[Tuple[str, ...]] = (
+    "id",
+    "loan_amnt",
+    "term",
+    "int_rate",
+    "installment",
+    "grade",
+    "sub_grade",
+    "emp_length",
+    "home_ownership",
+    "annual_inc",
+    "verification_status",
+    "purpose",
+    "dti",
+    "delinq_2yrs",
+    "inq_last_6mths",
+    "open_acc",
+    "pub_rec",
+    "revol_bal",
+    "revol_util",
+    "total_acc",
+    "application_type",
+    "fico_range_low",
+    "fico_range_high",
+    "issue_d",
+    "earliest_cr_line",
+    "loan_status",
+)
 
 DATE_FMT_IN: Final[str] = "%b-%Y"
 
@@ -150,7 +175,7 @@ def _validate_headers(fieldnames: Optional[List[str]]) -> None:
         msg = "CSV has no header row."
         raise ValueError(msg)
     present = {h.strip() for h in fieldnames if h is not None}
-    missing = sorted(REQUIRED_HEADERS - present)
+    missing = sorted(set(LOAN_CSV_COLUMNS) - present)
     if missing:
         msg = "Missing required columns: {}".format(", ".join(missing))
         raise ValueError(msg)
@@ -178,7 +203,7 @@ def filter_csv(input_path: Path, output_path: Path) -> Tuple[int, int, int]:
         with output_path.open("w", encoding="utf-8", newline="") as out_f:
             writer = csv.DictWriter(
                 out_f,
-                fieldnames=OUTPUT_FIELDNAMES,
+                fieldnames=LOAN_CSV_COLUMNS,
                 extrasaction="ignore",
                 lineterminator="\n",
             )

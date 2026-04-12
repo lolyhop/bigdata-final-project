@@ -46,9 +46,8 @@ def load(csv_path: Path, table_name: str) -> None:
     if not csv_path.is_file():
         raise FileNotFoundError("Input CSV not found: {}".format(csv_path))
 
-    create_sql = _read_sql("create_tables.sql", table_name=table_name)
-    import_sql = _read_sql("import_data.sql", table_name=table_name)
-    test_sql = _read_sql("test_database.sql", table_name=table_name)
+    create_table_sql = _read_sql("create_table.sql", table_name=table_name)
+    import_data_sql = _read_sql("import_data.sql", table_name=table_name)
 
     conn = psycopg2.connect(
         host=settings.PGHOST,
@@ -60,10 +59,10 @@ def load(csv_path: Path, table_name: str) -> None:
     try:
         with conn.cursor() as cur:
             LOGGER.info("Creating table %s ...", table_name)
-            cur.execute(create_sql)
+            cur.execute(create_table_sql)
         conn.commit()
 
-        import_statements = [s.strip() for s in import_sql.split(";") if s.strip()]
+        import_statements = [s.strip() for s in import_data_sql.split(";") if s.strip()]
         copy_stmt = import_statements[0]
         post_import_stmts = import_statements[1:]
 
@@ -75,16 +74,6 @@ def load(csv_path: Path, table_name: str) -> None:
                 LOGGER.info("Executing: %s", stmt.split("\n", 1)[0][:120])
                 cur.execute(stmt)
         conn.commit()
-        LOGGER.info("Import complete.")
-
-        with conn.cursor() as cur:
-            for statement in test_sql.split(";"):
-                stmt = statement.strip()
-                if not stmt:
-                    continue
-                cur.execute(stmt)
-                rows: List = cur.fetchall()
-                LOGGER.info("Query result:\n%s", pformat(rows[:10]))
     finally:
         conn.close()
 

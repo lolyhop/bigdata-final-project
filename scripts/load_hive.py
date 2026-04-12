@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 from typing import Any, List
 
 from pyhive import hive
@@ -10,9 +11,29 @@ from pyhive.exc import (
 )
 
 import settings
-from loan_schema import HIVE_FINAL_TABLE_CTAS_TEMPLATE, HIVE_STAGING_TABLE_DDL_TEMPLATE
+
+_REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+_SQL_DIR: Path = _REPO_ROOT / "sql"
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _read_hql(filename: str, **kwargs: str) -> str:
+    """Read a HiveQL file from the sql/ directory and apply placeholder substitution.
+
+    Args:
+        filename: File name relative to the sql/ directory (e.g. ``'db.hql'``).
+        **kwargs: Values forwarded to ``str.format`` on the file content.
+
+    Returns:
+        Formatted HiveQL string ready for execution.
+
+    Raises:
+        FileNotFoundError: If the HQL file does not exist.
+    """
+    path = _SQL_DIR / filename
+    content = path.read_text(encoding="utf-8")
+    return content.format(**kwargs) if kwargs else content
 
 
 def _open_connection(*, database: str) -> Any:
@@ -81,14 +102,19 @@ def run_hive_ddl() -> None:
     hdfs_data_dir = settings.HDFS_DATA_DIR
     hive_db = settings.HIVE_DATABASE
     final_table = settings.TABLE_NAME
-    staging_table = f"{settings.TABLE_NAME}_staging"
+    staging_table_1 = f"{settings.TABLE_NAME}_staging_1"
+    staging_table_2 = f"{settings.TABLE_NAME}_staging_2"
+
+    hive_warehouse_dir = settings.HIVE_WAREHOUSE_DIR
 
     LOGGER.info(
-        "Hive DDL: database=%s final_table=%s staging_table=%s location=%s",
+        "Hive DDL: database=%s final_table=%s staging_table_1=%s staging_table_2=%s sqoop_location=%s warehouse=%s",
         hive_db,
         final_table,
-        staging_table,
+        staging_table_1,
+        staging_table_2,
         hdfs_data_dir,
+        hive_warehouse_dir,
     )
 
     conn_default = _open_connection(database="default")
@@ -102,29 +128,22 @@ def run_hive_ddl() -> None:
 
     conn_db = _open_connection(database=hive_db)
     try:
-        _execute_statements(
-            conn_db,
-            [
-                "DROP TABLE IF EXISTS {final}".format(final=final_table),
-                "DROP TABLE IF EXISTS {stg}".format(stg=staging_table),
-                HIVE_STAGING_TABLE_DDL_TEMPLATE.format(
-                    staging_table=staging_table,
-                    hdfs_data_dir=hdfs_data_dir,
-                ),
-                HIVE_FINAL_TABLE_CTAS_TEMPLATE.format(
-                    final_table=final_table,
-                    staging_table=staging_table,
-                ),
-                "DROP TABLE IF EXISTS {stg}".format(stg=staging_table),
-            ],
+        import_hql = _read_hql(
+            "import_data.hql",
+            staging_table_1=staging_table_1,
+            staging_table_2=staging_table_2,
+            final_table=final_table,
+            hdfs_data_dir=hdfs_data_dir,
+            hive_warehouse_dir=hive_warehouse_dir,
         )
+        import_statements = [s.strip() for s in import_hql.split(";") if s.strip()]
+        _execute_statements(conn_db, import_statements)
     finally:
         conn_db.close()
 
     LOGGER.info(
-        "Curated table %s ready; staging table %s dropped (Sqoop files remain under %s).",
+        "Curated table %s ready; staging tables dropped (Sqoop files remain under %s).",
         final_table,
-        staging_table,
         hdfs_data_dir,
     )
 

@@ -106,7 +106,7 @@ The raw file contains 151 columns, of which we retain 26 that are available at l
 
 ### Relational Database
 
-The database schema is defined in `sql/create_tables.sql`. The table `loans` has 26 columns with types chosen to match the data: `BIGINT` for the primary key, `DOUBLE PRECISION` for continuous financial values, `DATE` for temporal fields, `INTEGER` for count fields, and `TEXT` for categorical fields. Five CHECK constraints enforce domain integrity: non-negative values for count columns, correct FICO range ordering (`fico_range_low` ≤ `fico_range_high`), positive loan term, non-negative revolving balance, and valid numeric ranges for rates and amounts. The script `load_postgres.py` reads the DDL from `sql/create_tables.sql`, drops and recreates the table to guarantee idempotency, bulk-loads the filtered CSV using the `COPY FROM STDIN` statement in `sql/import_data.sql` via `psycopg2`, and runs `ANALYZE` to update planner statistics.
+The table `loans` has 26 columns with types chosen to match the data: `BIGINT` for the primary key, `DOUBLE PRECISION` for continuous financial values, `DATE` for temporal fields, `INTEGER` for count fields, and `TEXT` for categorical fields. Five CHECK constraints enforce domain integrity: non-negative values for count columns, correct FICO range ordering (`fico_range_low` ≤ `fico_range_high`), positive loan term, non-negative revolving balance, and valid numeric ranges for rates and amounts. The script `load_postgres.py` reads the DDL from `sql/import_data.sql`, drops and recreates the table to guarantee idempotency, bulk-loads the filtered CSV using the `COPY FROM STDIN` statement via `psycopg2`, and runs `ANALYZE` to update planner statistics.
 
 ### HDFS Ingestion
 
@@ -119,3 +119,31 @@ We use **Parquet** format with **Snappy** compression for all HDFS data. The dow
 ### Results
 
 The `loans` table was loaded into the `team25_projectdb` PostgreSQL database with 2,260,701 rows. Sqoop exported the table to HDFS at `/user/team25/loans` as a Snappy-compressed Parquet file. A copy of the Parquet file is archived in the `output/` directory of the repository.
+
+---
+
+## Stage 2 — Data Storage and Preparation
+
+The goal of this stage is to register the HDFS Parquet data in Apache Hive, apply the necessary type corrections, and organize the dataset into a partitioned and bucketed table optimized for analytical queries. The entire workflow is driven by `scripts/load_hive.py` and `scripts/stage2.sh`, and runs end-to-end without manual steps.
+
+### Hive Database
+
+The script `load_hive.py` creates the Hive database `team25_projectdb` in the metastore via `CREATE DATABASE IF NOT EXISTS`. All managed table data is written to `HIVE_WAREHOUSE_DIR` (`/user/team25/project/hive/warehouse`), which is distinct from the Sqoop import path (`/user/team25/loans`) to keep raw ingestion data and Hive-managed data in separate HDFS locations.
+
+#### Staging Table
+
+`loans_staging` is an external Parquet table whose `LOCATION` points directly at the Sqoop output directory. It exposes the dataset with the raw Sqoop column types: `issue_d` and `earliest_cr_line` are represented as `BIGINT` millisecond timestamps, which is how Sqoop serializes `DATE` columns into Parquet. The table is dropped at the end of the pipeline; the underlying HDFS files are not modified.
+
+#### Type Conversion
+
+An intermediate managed table `loans_unpart` is created from `loans_staging` via CTAS. The two timestamp columns are converted to native `DATE` values using `CAST(TO_DATE(FROM_UNIXTIME(CAST(col / 1000 AS BIGINT))) AS DATE)`, which divides milliseconds to seconds before applying the Unix epoch conversion. All 25 remaining columns are carried through unchanged. The table is dropped once its data has been transferred into the final partitioned table.
+
+#### Partitioned and Bucketed Table
+
+The final table `loans` is an external table partitioned by `grade` and clustered by `id` into 8 buckets, stored as Snappy-compressed Parquet under `HIVE_WAREHOUSE_DIR/loans`.
+
+The `grade` column was chosen as the partition key because it is a bounded seven-value categorical (A–G) that directly encodes the Lending Club credit risk tier. Partitioning on `grade` means queries filtered by risk level — common in both exploratory analysis and model evaluation — scan only the relevant partition rather than the full dataset. Seven partitions are small enough to avoid NameNode metadata pressure while producing meaningful data slices of roughly 314 K rows each on average.
+
+Bucketing by `id` with 8 buckets per partition was chosen because `id` is the primary key and has a uniform distribution, making it ideal for hash-based splitting. Eight buckets yield approximately 39 K rows per file, which is large enough for Tez to process efficiently without incurring small-file overhead. Bucketing by the primary key also enables efficient map-side joins in future Spark stages if a secondary lookup table keyed on `id` is introduced.
+
+The table is declared `EXTERNAL` so that the curated data at `HIVE_WAREHOUSE_DIR/loans` survives a `DROP TABLE` during a pipeline re-run; only the metastore entry is removed. Dynamic partitioning (`hive.exec.dynamic.partition=true`, mode `nonstrict`) is enabled so that a single `INSERT INTO loans PARTITION (grade) SELECT ... FROM loans_unpart` populates all seven grade partitions automatically without requiring a separate query per partition value.

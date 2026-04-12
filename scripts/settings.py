@@ -96,6 +96,13 @@ HDFS_DATA_DIR = str(_raw_hdfs).strip()
 if "'" in HDFS_DATA_DIR:
     raise SettingsError("HDFS_DATA_DIR must not contain single quotes.")
 
+_raw_hive_warehouse = os.environ.get("HIVE_WAREHOUSE_DIR")
+if _raw_hive_warehouse is None or not str(_raw_hive_warehouse).strip():
+    raise SettingsError("HIVE_WAREHOUSE_DIR must be set to a non-empty value.")
+HIVE_WAREHOUSE_DIR = str(_raw_hive_warehouse).strip()
+if "'" in HIVE_WAREHOUSE_DIR:
+    raise SettingsError("HIVE_WAREHOUSE_DIR must not contain single quotes.")
+
 _raw_hive_db = os.environ.get("HIVE_DATABASE")
 if (
     _raw_hive_db is None
