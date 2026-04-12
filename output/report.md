@@ -89,3 +89,33 @@ The target variable for predictive modeling is `loan_status`. In the raw dataset
 A particularly important part of the selected feature set is the presence of time-related variables, especially `issue_d` and `earliest_cr_line`. These columns preserve the temporal structure of the data and support both analysis and feature engineering. The `issue_d` field can be used to study how issuance activity and default behavior change over time, while `earliest_cr_line` makes it possible to derive the borrower’s credit history length, which is a meaningful indicator of credit risk.
 
 During the **Data Ingestion** stage, both `issue_d` and `earliest_cr_line` are converted from raw string values into proper datetime columns immediately after the dataset is downloaded. They are then preserved as datetime values throughout the full pipeline. This ensures consistent handling of temporal information across PostgreSQL, HDFS, Hive, Spark, and downstream analytics.
+
+---
+
+## Stage 1 — Data Collection and Ingestion
+
+The goal of this stage is to collect the raw dataset, load it into a relational database, and transfer it to HDFS for distributed processing. The entire workflow is driven by two scripts, `preprocess.sh` and `stage1.sh`, and runs end-to-end without manual steps.
+
+### Data Collection
+
+The raw dataset is downloaded from a public Yandex Disk share using the Yandex Disk public API. The script `download_from_yandex_disk.py` resolves the share URL to a temporary direct download link, fetches the zip archive, and writes it to the `data/` directory. The archive is then extracted to produce `data/dataset.csv`. No credentials or third-party CLI tools are required.
+
+### Preprocessing
+
+The raw file contains 151 columns, of which we retain 26 that are available at loan origination time and are relevant to the prediction task. The script `filter_dataset_for_pg.py` applies three normalization steps before the data reaches the database: date strings in `Mon-YYYY` format are converted to ISO `YYYY-MM-DD`; the `term` field (e.g. `"36 months"`) is reduced to a plain integer; and percent signs are stripped from rate fields such as `int_rate` and `revol_util`. Rows with a missing `id` or an unparseable date are dropped. The cleaned data is written to `data/dataset_filtered.csv`.
+
+### Relational Database
+
+The database schema is defined in `sql/create_tables.sql`. The table `loans` has 26 columns with types chosen to match the data: `BIGINT` for the primary key, `DOUBLE PRECISION` for continuous financial values, `DATE` for temporal fields, `INTEGER` for count fields, and `TEXT` for categorical fields. Five CHECK constraints enforce domain integrity: non-negative values for count columns, correct FICO range ordering (`fico_range_low` ≤ `fico_range_high`), positive loan term, non-negative revolving balance, and valid numeric ranges for rates and amounts. The script `load_postgres.py` reads the DDL from `sql/create_tables.sql`, drops and recreates the table to guarantee idempotency, bulk-loads the filtered CSV using the `COPY FROM STDIN` statement in `sql/import_data.sql` via `psycopg2`, and runs `ANALYZE` to update planner statistics.
+
+### HDFS Ingestion
+
+The script `stage1.sh` transfers the PostgreSQL table to HDFS using **Apache Sqoop**. Before each import, the target directory is cleared with `hdfs dfs -rm -rf` to ensure the pipeline can be re-run cleanly. Sqoop reads the table with 4 parallel mappers, splitting the work by the `id` column.
+
+### File Format and Compression
+
+We use **Parquet** format with **Snappy** compression for all HDFS data. The downstream stages — Hive queries and Spark analytics — read the dataset many times but write it only once at ingestion. Parquet's columnar layout means each query reads only the columns it needs, which significantly reduces I/O compared to row-oriented formats such as Avro. Snappy decompresses faster than gzip or bzip2 at the cost of a slightly larger file size, keeping query latency low. This combination is well-suited to read-heavy analytical workloads where throughput matters more than maximum compression ratio, as supported by comparative benchmarks in the literature.
+
+### Results
+
+The `loans` table was loaded into the `team25_projectdb` PostgreSQL database with 2,260,701 rows. Sqoop exported the table to HDFS at `/user/team25/loans` as a Snappy-compressed Parquet file. A copy of the Parquet file is archived in the `output/` directory of the repository.

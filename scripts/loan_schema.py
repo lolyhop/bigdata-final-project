@@ -31,40 +31,6 @@ LOAN_CSV_COLUMNS: Final[Tuple[str, ...]] = (
     "loan_status",
 )
 
-LOAN_TABLE_DDL_TEMPLATE: Final[str] = """
-
-DROP TABLE IF EXISTS {table_name};
-
-CREATE TABLE {table_name} (
-    id BIGINT PRIMARY KEY,
-    loan_amnt DOUBLE PRECISION,
-    term INTEGER,
-    int_rate DOUBLE PRECISION,
-    installment DOUBLE PRECISION,
-    grade TEXT,
-    sub_grade TEXT,
-    emp_length TEXT,
-    home_ownership TEXT,
-    annual_inc DOUBLE PRECISION,
-    verification_status TEXT,
-    purpose TEXT,
-    dti DOUBLE PRECISION,
-    delinq_2yrs INTEGER,
-    inq_last_6mths INTEGER,
-    open_acc INTEGER,
-    pub_rec INTEGER,
-    revol_bal BIGINT,
-    revol_util DOUBLE PRECISION,
-    total_acc INTEGER,
-    application_type TEXT,
-    fico_range_low INTEGER,
-    fico_range_high INTEGER,
-    issue_d DATE,
-    earliest_cr_line DATE,
-    loan_status TEXT
-);
-"""
-
 HIVE_STAGING_TABLE_DDL_TEMPLATE: Final[str] = """
 CREATE EXTERNAL TABLE {staging_table} (
     id BIGINT,

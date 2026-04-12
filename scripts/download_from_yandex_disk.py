@@ -4,8 +4,9 @@ import sys
 import urllib.parse as ul
 import urllib.request
 from pathlib import Path
-from typing import Any, Final
 from urllib.error import HTTPError, URLError
+
+from typing_extensions import Final
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def _fetch_download_href(public_share_url: str) -> str:
     with urllib.request.urlopen(request, timeout=120) as response:
         raw = response.read().decode("utf-8", errors="replace")
     try:
-        payload: dict[str, Any] = json.loads(raw)
+        payload = json.loads(raw)  # type: Dict[str, Any]
     except json.JSONDecodeError as exc:
         msg = "Yandex API returned non-JSON body."
         raise ValueError(msg) from exc

@@ -2,7 +2,7 @@ pylint
 pyspark
 pandas
 streamlit
-asyncpg>=0.22.0,<0.27.0
+psycopg2-binary>=2.9
 typing_extensions>=3.7.4
 pyhive>=0.7.0,<0.8.0
 thrift>=0.10.0,<1.0.0

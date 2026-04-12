@@ -1,114 +1,107 @@
-import asyncio
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Coroutine, Dict, List, Union
+from pprint import pformat
+from typing import List
 
-import asyncpg
-from typing_extensions import Final
+import psycopg2
 
-from loan_schema import LOAN_CSV_COLUMNS, LOAN_TABLE_DDL_TEMPLATE
 import settings
 
 LOGGER = logging.getLogger(__name__)
 
-COPY_COLUMNS: Final[List[str]] = list(LOAN_CSV_COLUMNS)
+_REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+_SQL_DIR: Path = _REPO_ROOT / "sql"
 
 
-def _connect_kwargs() -> Dict[str, Union[str, int]]:
-    """Build keyword arguments for ``asyncpg.connect`` from module ``settings``.
+def _read_sql(filename: str, **kwargs: str) -> str:
+    """Read a SQL file from the sql/ directory and apply placeholder substitution.
+
+    Args:
+        filename: File name relative to the sql/ directory (e.g. ``'create_tables.sql'``).
+        **kwargs: Values forwarded to ``str.format`` on the file content.
 
     Returns:
-        Keyword arguments for ``asyncpg.connect`` (host, port, user, password, database).
+        Formatted SQL string ready for execution.
+
+    Raises:
+        FileNotFoundError: If the SQL file does not exist.
     """
-    return {
-        "host": settings.PGHOST,
-        "port": settings.PGPORT,
-        "user": settings.PGUSER,
-        "password": settings.PGPASSWORD,
-        "database": settings.PGDATABASE,
-    }
+    path = _SQL_DIR / filename
+    content = path.read_text(encoding="utf-8")
+    return content.format(**kwargs) if kwargs else content
 
 
-async def _load_csv(conn: asyncpg.Connection, table_name: str, csv_path: Path) -> None:
-    """Run ``COPY``-style ingest using asyncpg.
+def load(csv_path: Path, table_name: str) -> None:
+    """Recreate the PostgreSQL table and bulk-load data from *csv_path*.
 
     Args:
-        conn: Open asyncpg connection.
-        table_name: Destination table name.
-        csv_path: UTF-8 CSV with header matching ``COPY_COLUMNS``.
+        csv_path: Preprocessed CSV file produced by ``filter_dataset_for_pg.py``.
+        table_name: Destination table name (must be a valid SQL identifier).
 
     Raises:
-        OSError: If the file cannot be read.
-        asyncpg.PostgresError: On server-side errors.
+        FileNotFoundError: If *csv_path* does not exist.
+        psycopg2.Error: On any database error.
     """
-    with csv_path.open("rb") as handle:
-        await conn.copy_to_table(
-            table_name,
-            source=handle,
-            format="csv",
-            header=True,
-            null="",
-            columns=COPY_COLUMNS,
-        )
-
-
-async def run_load() -> None:
-    """Connect, recreate the table, load data, and analyze using module ``settings``.
-
-    Raises:
-        FileNotFoundError: If the CSV path is not a file.
-        OSError: If the CSV cannot be read.
-        asyncpg.PostgresError: On database errors.
-    """
-    csv_path = settings.DATASET_FILTERED_PATH
-    table_name = settings.TABLE_NAME
-    connect_kwargs = _connect_kwargs()
     if not csv_path.is_file():
-        msg = "Input CSV not found: {}".format(csv_path)
-        raise FileNotFoundError(msg)
+        raise FileNotFoundError("Input CSV not found: {}".format(csv_path))
 
-    conn = await asyncpg.connect(**connect_kwargs)
+    create_sql = _read_sql("create_tables.sql", table_name=table_name)
+    import_sql = _read_sql("import_data.sql", table_name=table_name)
+    test_sql = _read_sql("test_database.sql", table_name=table_name)
+
+    conn = psycopg2.connect(
+        host=settings.PGHOST,
+        port=settings.PGPORT,
+        user=settings.PGUSER,
+        password=settings.PGPASSWORD,
+        dbname=settings.PGDATABASE,
+    )
     try:
-        await conn.execute(LOAN_TABLE_DDL_TEMPLATE.format(table_name=table_name))
-        LOGGER.info("Loading %s into %s ...", csv_path, table_name)
-        await _load_csv(conn, table_name, csv_path)
-        await conn.execute("ANALYZE {}".format(table_name))
-        LOGGER.info("ANALYZE %s complete.", table_name)
+        with conn.cursor() as cur:
+            LOGGER.info("Creating table %s ...", table_name)
+            cur.execute(create_sql)
+        conn.commit()
+
+        import_statements = [s.strip() for s in import_sql.split(";") if s.strip()]
+        copy_stmt = import_statements[0]
+        post_import_stmts = import_statements[1:]
+
+        with conn.cursor() as cur:
+            LOGGER.info("Loading %s into %s ...", csv_path, table_name)
+            with csv_path.open("r", encoding="utf-8") as fh:
+                cur.copy_expert(copy_stmt, fh)
+            for stmt in post_import_stmts:
+                LOGGER.info("Executing: %s", stmt.split("\n", 1)[0][:120])
+                cur.execute(stmt)
+        conn.commit()
+        LOGGER.info("Import complete.")
+
+        with conn.cursor() as cur:
+            for statement in test_sql.split(";"):
+                stmt = statement.strip()
+                if not stmt:
+                    continue
+                cur.execute(stmt)
+                rows: List = cur.fetchall()
+                LOGGER.info("Query result:\n%s", pformat(rows[:10]))
     finally:
-        await conn.close()
-
-
-def _run_async(coro: Coroutine[Any, Any, None]) -> None:
-    """Run ``coro`` to completion (Python 3.6-compatible; no ``asyncio.run``).
-
-    Args:
-        coro: Coroutine returned from an async function (e.g. ``run_load()``).
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(coro)
-    finally:
-        loop.close()
+        conn.close()
 
 
 def main() -> int:
-    """CLI entrypoint; uses module ``settings`` (``.env`` + environment).
+    """CLI entrypoint; configuration comes from the ``settings`` module.
 
     Returns:
-        Process exit code (0 on success).
+        Process exit code (0 on success, 1 on error).
     """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     try:
-        _run_async(run_load())
+        load(settings.DATASET_FILTERED_PATH, settings.TABLE_NAME)
     except FileNotFoundError as exc:
         LOGGER.error("%s", exc)
         return 1
-    except (OSError, asyncpg.PostgresError) as exc:
+    except (OSError, psycopg2.Error) as exc:
         LOGGER.error("Database or I/O error: %s", exc)
         return 1
     return 0
