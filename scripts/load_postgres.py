@@ -68,12 +68,9 @@ async def run_load() -> None:
         msg = "Input CSV not found: {}".format(csv_path)
         raise FileNotFoundError(msg)
 
-    ddl = LOAN_TABLE_DDL_TEMPLATE.format(table_name=table_name).strip()
-
     conn = await asyncpg.connect(**connect_kwargs)
     try:
-        await conn.execute("DROP TABLE IF EXISTS {}".format(table_name))
-        await conn.execute(ddl)
+        await conn.execute(LOAN_TABLE_DDL_TEMPLATE.format(table_name=table_name))
         LOGGER.info("Loading %s into %s ...", csv_path, table_name)
         await _load_csv(conn, table_name, csv_path)
         await conn.execute("ANALYZE {}".format(table_name))

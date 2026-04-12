@@ -32,6 +32,9 @@ LOAN_CSV_COLUMNS: Final[Tuple[str, ...]] = (
 )
 
 LOAN_TABLE_DDL_TEMPLATE: Final[str] = """
+
+DROP TABLE IF EXISTS {table_name};
+
 CREATE TABLE {table_name} (
     id BIGINT PRIMARY KEY,
     loan_amnt DOUBLE PRECISION,

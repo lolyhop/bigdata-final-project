@@ -183,6 +183,7 @@ cython_debug/
 *.gz
 *.zst
 *.tar
+*.zip
 
 # Mac OS files
 .DS_Store
