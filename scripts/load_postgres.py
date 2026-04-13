@@ -1,35 +1,13 @@
 import logging
 import sys
 from pathlib import Path
-from pprint import pformat
-from typing import List
 
 import psycopg2
 
+import pg_utils
 import settings
 
 LOGGER = logging.getLogger(__name__)
-
-_REPO_ROOT: Path = Path(__file__).resolve().parents[1]
-_SQL_DIR: Path = _REPO_ROOT / "sql"
-
-
-def _read_sql(filename: str, **kwargs: str) -> str:
-    """Read a SQL file from the sql/ directory and apply placeholder substitution.
-
-    Args:
-        filename: File name relative to the sql/ directory (e.g. ``'create_tables.sql'``).
-        **kwargs: Values forwarded to ``str.format`` on the file content.
-
-    Returns:
-        Formatted SQL string ready for execution.
-
-    Raises:
-        FileNotFoundError: If the SQL file does not exist.
-    """
-    path = _SQL_DIR / filename
-    content = path.read_text(encoding="utf-8")
-    return content.format(**kwargs) if kwargs else content
 
 
 def load(csv_path: Path, table_name: str) -> None:
@@ -46,16 +24,10 @@ def load(csv_path: Path, table_name: str) -> None:
     if not csv_path.is_file():
         raise FileNotFoundError("Input CSV not found: {}".format(csv_path))
 
-    create_table_sql = _read_sql("create_table.sql", table_name=table_name)
-    import_data_sql = _read_sql("import_data.sql", table_name=table_name)
+    create_table_sql = pg_utils.read_sql("create_table.sql", table_name=table_name)
+    import_data_sql = pg_utils.read_sql("import_data.sql", table_name=table_name)
 
-    conn = psycopg2.connect(
-        host=settings.PGHOST,
-        port=settings.PGPORT,
-        user=settings.PGUSER,
-        password=settings.PGPASSWORD,
-        dbname=settings.PGDATABASE,
-    )
+    conn = pg_utils.open_connection()
     try:
         with conn.cursor() as cur:
             LOGGER.info("Creating table %s ...", table_name)

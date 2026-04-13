@@ -1,89 +1,12 @@
 import logging
 import sys
-from pathlib import Path
-from typing import Any, List
 
-from pyhive import hive
-from pyhive.exc import (
-    DatabaseError,
-    OperationalError,
-    ProgrammingError,
-)
+from pyhive.exc import DatabaseError, OperationalError, ProgrammingError
 
+import hive_utils
 import settings
 
-_REPO_ROOT: Path = Path(__file__).resolve().parents[1]
-_SQL_DIR: Path = _REPO_ROOT / "sql"
-
 LOGGER = logging.getLogger(__name__)
-
-
-def _read_hql(filename: str, **kwargs: str) -> str:
-    """Read a HiveQL file from the sql/ directory and apply placeholder substitution.
-
-    Args:
-        filename: File name relative to the sql/ directory (e.g. ``'db.hql'``).
-        **kwargs: Values forwarded to ``str.format`` on the file content.
-
-    Returns:
-        Formatted HiveQL string ready for execution.
-
-    Raises:
-        FileNotFoundError: If the HQL file does not exist.
-    """
-    path = _SQL_DIR / filename
-    content = path.read_text(encoding="utf-8")
-    return content.format(**kwargs) if kwargs else content
-
-
-def _open_connection(*, database: str) -> Any:
-    """Open a PyHive connection using module ``settings``.
-
-    Args:
-        database: Hive database name for the session.
-
-    Returns:
-        Open ``hive.Connection``.
-
-    Raises:
-        OSError: If the network connection fails.
-    """
-    auth = settings.HIVE_AUTH
-    connect_kwargs = {
-        "host": settings.HIVE_HOST,
-        "port": settings.HIVE_PORT,
-        "database": database,
-        "username": settings.HIVE_USER,
-        "auth": auth,
-    }
-    # PyHive: password is allowed only for LDAP or CUSTOM (see Connection.__init__).
-    if auth is not None and str(auth).strip().upper() in ("LDAP", "CUSTOM"):
-        connect_kwargs["password"] = settings.HIVE_PASSWORD
-    return hive.connect(**connect_kwargs)
-
-
-def _execute_statements(conn: Any, statements: List[str]) -> None:
-    """Run DDL statements sequentially on one connection.
-
-    Args:
-        conn: Open Hive connection.
-        statements: Non-empty SQL strings.
-
-    Raises:
-        OperationalError: On HiveServer2 execution errors.
-        ProgrammingError: On SQL errors.
-        DatabaseError: On other DB-API errors.
-    """
-    cursor = conn.cursor()
-    try:
-        for sql in statements:
-            stripped = sql.strip()
-            if not stripped:
-                continue
-            LOGGER.info("Executing: %s", stripped.split("\n", 1)[0][:120])
-            cursor.execute(stripped)
-    finally:
-        cursor.close()
 
 
 def run_hive_ddl() -> None:
@@ -117,18 +40,18 @@ def run_hive_ddl() -> None:
         hive_warehouse_dir,
     )
 
-    conn_default = _open_connection(database="default")
+    conn_default = hive_utils.open_connection(database="default")
     try:
-        _execute_statements(
+        hive_utils.execute_hql(
             conn_default,
-            ["CREATE DATABASE IF NOT EXISTS {hive_db}".format(hive_db=hive_db)],
+            "CREATE DATABASE IF NOT EXISTS {hive_db}".format(hive_db=hive_db),
         )
     finally:
         conn_default.close()
 
-    conn_db = _open_connection(database=hive_db)
+    conn_db = hive_utils.open_connection(database=hive_db)
     try:
-        import_hql = _read_hql(
+        import_hql = hive_utils.read_hql(
             "import_data.hql",
             staging_table_1=staging_table_1,
             staging_table_2=staging_table_2,
@@ -136,8 +59,7 @@ def run_hive_ddl() -> None:
             hdfs_data_dir=hdfs_data_dir,
             hive_warehouse_dir=hive_warehouse_dir,
         )
-        import_statements = [s.strip() for s in import_hql.split(";") if s.strip()]
-        _execute_statements(conn_db, import_statements)
+        hive_utils.execute_hql(conn_db, import_hql)
     finally:
         conn_db.close()
 
