@@ -98,14 +98,8 @@ def save_metrics_csv(spark, model_name, metrics, best_params, output_path):
 
 
 def save_predictions(predictions, output_path):
-    cols = ["label", "prediction"]
-    if "rawPrediction" in predictions.columns:
-        cols.append("rawPrediction")
-    if "probability" in predictions.columns:
-        cols.append("probability")
-
     (
-        predictions.select(*cols)
+        predictions.select("label", "prediction")
         .coalesce(1)
         .write.mode("overwrite")
         .option("header", "true")

@@ -276,7 +276,9 @@ def main():
     print("\nTest raw label distribution")
     test_raw.groupBy("label").count().orderBy("label").show()
 
-    train_raw_label_distribution_df = build_label_distribution_df(train_raw, "train_raw")
+    train_raw_label_distribution_df = build_label_distribution_df(
+        train_raw, "train_raw"
+    )
     test_raw_label_distribution_df = build_label_distribution_df(test_raw, "test_raw")
 
     print("\nSaving raw train split to:", ML_TRAIN_RAW_PATH)
@@ -328,8 +330,12 @@ def main():
     print("\nTest encoded label distribution")
     test_encoded.groupBy("label").count().orderBy("label").show()
 
-    train_encoded_label_distribution_df = build_label_distribution_df(train_encoded, "train_encoded")
-    test_encoded_label_distribution_df = build_label_distribution_df(test_encoded, "test_encoded")
+    train_encoded_label_distribution_df = build_label_distribution_df(
+        train_encoded, "train_encoded"
+    )
+    test_encoded_label_distribution_df = build_label_distribution_df(
+        test_encoded, "test_encoded"
+    )
 
     print("\nTrain encoded sample")
     train_encoded.show(10, truncate=False)
@@ -365,8 +371,7 @@ def main():
     )
 
     label_distribution_df = (
-        full_label_distribution_df
-        .unionByName(train_raw_label_distribution_df)
+        full_label_distribution_df.unionByName(train_raw_label_distribution_df)
         .unionByName(test_raw_label_distribution_df)
         .unionByName(train_encoded_label_distribution_df)
         .unionByName(test_encoded_label_distribution_df)
