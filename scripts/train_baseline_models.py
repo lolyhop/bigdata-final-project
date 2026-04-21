@@ -33,8 +33,8 @@ def train_random_forest(train_df, test_df):
     model = RandomForestClassifier(
         labelCol="label",
         featuresCol="features",
-        numTrees=100,
-        maxDepth=10,
+        numTrees=10,
+        maxDepth=3,
         seed=42,
     ).fit(train_df)
 

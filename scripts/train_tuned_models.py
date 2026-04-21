@@ -81,9 +81,9 @@ def tune_random_forest(train_df, test_df):
 
     param_grid = (
         ParamGridBuilder()
-        .addGrid(rf.numTrees, [50, 100, 150])
-        .addGrid(rf.maxDepth, [5, 10, 15])
-        .addGrid(rf.minInstancesPerNode, [1, 5, 10])
+        .addGrid(rf.numTrees, [10, 20, 30])
+        .addGrid(rf.maxDepth, [3, 5, 7])
+        .addGrid(rf.minInstancesPerNode, [5, 10, 20])
         .build()
     )
 
