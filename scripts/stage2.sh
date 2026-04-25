@@ -16,3 +16,13 @@ if [ -n "${HADOOP_CONF_DIR:-}" ]; then
 fi
 
 python3 scripts/load_hive.py
+
+mkdir -p output
+
+echo "Running EDA queries ..."
+for q in 1 2 3 4 5 6; do
+  echo "  EDA query ${q} ..."
+  python3 "scripts/eda/q${q}.py"
+done
+
+echo "Stage II finished successfully."

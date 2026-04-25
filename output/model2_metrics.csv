@@ -1,0 +1,2 @@
+model,accuracy,precision,recall,f1,areaUnderROC,areaUnderPR,tp,tn,fp,fn,best_params
+LinearSVC,0.6056697840907403,0.29312408074183804,0.6880622687505414,0.41110971453076134,0.6947155894988767,0.35238802566979227,55603,189067,134088,25208,aggregationDepth=2; featuresCol=features; fitIntercept=True; labelCol=label; maxIter=100; predictionCol=prediction; rawPredictionCol=rawPrediction; regParam=0.001; standardization=True; threshold=0.0; tol=1e-06

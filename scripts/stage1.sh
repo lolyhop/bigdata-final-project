@@ -74,3 +74,5 @@ if [ -n "${PARQUET_FILE}" ]; then
 else
   echo "Warning: no .parquet file found in ${HDFS_DATA_DIR}" >&2
 fi
+
+echo "Stage I finished successfully"

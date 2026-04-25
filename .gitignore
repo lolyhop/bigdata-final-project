@@ -185,5 +185,8 @@ cython_debug/
 *.tar
 *.zip
 
+# Keep everything in output folder and its subfolders
+!output/**
+
 # Mac OS files
 .DS_Store

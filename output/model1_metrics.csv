@@ -1,0 +1,2 @@
+model,accuracy,precision,recall,f1,areaUnderROC,areaUnderPR,tp,tn,fp,fn,best_params
+RandomForest,0.6083705064287589,0.29794799498746866,0.7061291160856814,0.41907091003227687,0.704285989154292,0.36928095465267574,57063,188698,134457,23748,cacheNodeIds=False; checkpointInterval=10; featureSubsetStrategy=auto; featuresCol=features; impurity=gini; labelCol=label; maxBins=32; maxDepth=7; maxMemoryInMB=256; minInfoGain=0.0; minInstancesPerNode=10; numTrees=30; predictionCol=prediction; probabilityCol=probability; rawPredictionCol=rawPrediction; seed=42; subsamplingRate=1.0

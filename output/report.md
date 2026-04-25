@@ -92,7 +92,7 @@ During the **Data Ingestion** stage, both `issue_d` and `earliest_cr_line` are c
 
 ---
 
-## Stage 1 — Data Collection and Ingestion
+## Stage 1 - Data Collection and Ingestion
 
 The goal of this stage is to collect the raw dataset, load it into a relational database, and transfer it to HDFS for distributed processing. The entire workflow is driven by two scripts, `preprocess.sh` and `stage1.sh`, and runs end-to-end without manual steps.
 
@@ -114,7 +114,7 @@ The script `stage1.sh` transfers the PostgreSQL table to HDFS using **Apache Sqo
 
 ### File Format and Compression
 
-We use **Parquet** format with **Snappy** compression for all HDFS data. The downstream stages — Hive queries and Spark analytics — read the dataset many times but write it only once at ingestion. Parquet's columnar layout means each query reads only the columns it needs, which significantly reduces I/O compared to row-oriented formats such as Avro. Snappy decompresses faster than gzip or bzip2 at the cost of a slightly larger file size, keeping query latency low. This combination is well-suited to read-heavy analytical workloads where throughput matters more than maximum compression ratio, as supported by comparative benchmarks in the literature.
+We use **Parquet** format with **Snappy** compression for all HDFS data. The downstream stages - Hive queries and Spark analytics - read the dataset many times but write it only once at ingestion. Parquet's columnar layout means each query reads only the columns it needs, which significantly reduces I/O compared to row-oriented formats such as Avro. Snappy decompresses faster than gzip or bzip2 at the cost of a slightly larger file size, keeping query latency low. This combination is well-suited to read-heavy analytical workloads where throughput matters more than maximum compression ratio, as supported by comparative benchmarks in the literature.
 
 ### Results
 
@@ -122,7 +122,7 @@ The `loans` table was loaded into the `team25_projectdb` PostgreSQL database wit
 
 ---
 
-## Stage 2 — Data Storage and Preparation
+## Stage 2 - Data Storage and Preparation
 
 The goal of this stage is to register the HDFS Parquet data in Apache Hive, apply the necessary type corrections, and organize the dataset into a partitioned and bucketed table optimized for analytical queries. The entire workflow is driven by `scripts/load_hive.py` and `scripts/stage2.sh`, and runs end-to-end without manual steps.
 
@@ -142,7 +142,7 @@ An intermediate managed table `loans_unpart` is created from `loans_staging` via
 
 The final table `loans` is an external table partitioned by `grade` and clustered by `id` into 8 buckets, stored as Snappy-compressed Parquet under `HIVE_WAREHOUSE_DIR/loans`.
 
-The `grade` column was chosen as the partition key because it is a bounded seven-value categorical (A–G) that directly encodes the Lending Club credit risk tier. Partitioning on `grade` means queries filtered by risk level — common in both exploratory analysis and model evaluation — scan only the relevant partition rather than the full dataset. Seven partitions are small enough to avoid NameNode metadata pressure while producing meaningful data slices of roughly 314 K rows each on average.
+The `grade` column was chosen as the partition key because it is a bounded seven-value categorical (A–G) that directly encodes the Lending Club credit risk tier. Partitioning on `grade` means queries filtered by risk level - common in both exploratory analysis and model evaluation - scan only the relevant partition rather than the full dataset. Seven partitions are small enough to avoid NameNode metadata pressure while producing meaningful data slices of roughly 314 K rows each on average.
 
 Bucketing by `id` with 8 buckets per partition was chosen because `id` is the primary key and has a uniform distribution, making it ideal for hash-based splitting. Eight buckets yield approximately 39 K rows per file, which is large enough for Tez to process efficiently without incurring small-file overhead. Bucketing by the primary key also enables efficient map-side joins in future Spark stages if a secondary lookup table keyed on `id` is introduced.
 
@@ -150,7 +150,7 @@ The table is declared `EXTERNAL` so that the curated data at `HIVE_WAREHOUSE_DIR
 
 ### Exploratory Data Analysis
 
-Six HiveQL queries are executed against the `loans` Hive table to surface patterns relevant to default prediction and portfolio management. Each query stores its aggregated results in a dedicated managed ORC table (`q1_results` through `q6_results`) and exports them to `output/q1.csv`–`output/q6.csv`. The results are visualized in Apache Superset using diverse chart types: bar, horizontal bar, line, heatmap, and bubble chart. All queries restrict analysis to completed loans with a known final outcome — `Fully Paid`, `Charged Off`, `Default`, and their policy-exception variants — to ensure the denominator reflects only resolved cases.
+Six HiveQL queries are executed against the `loans` Hive table to surface patterns relevant to default prediction and portfolio management. Each query stores its aggregated results in a dedicated managed ORC table (`q1_results` through `q6_results`) and exports them to `output/q1.csv`–`output/q6.csv`. The results are visualized in Apache Superset using diverse chart types: bar, horizontal bar, line, heatmap, and bubble chart. All queries restrict analysis to completed loans with a known final outcome - `Fully Paid`, `Charged Off`, `Default`, and their policy-exception variants - to ensure the denominator reflects only resolved cases.
 
 #### Default Rate by Loan Grade
 
@@ -158,11 +158,11 @@ The bar chart (Q1) plots default rate and average interest rate for each of Lend
 
 #### Default Rate by Loan Purpose
 
-The horizontal bar chart (Q2) ranks all 14 loan purposes by default rate alongside their loan volumes. `small_business` loans carry the highest default rate at approximately 30%, followed by `renewable_energy` and `moving` at around 23%. The safest purposes are `wedding` and `car` at 12–14%. `debt_consolidation` dominates the portfolio by volume — nearly 800 thousand completed loans — yet sits at a moderate 21% default rate, close to the dataset average. The divergence between volume and risk makes purpose a useful feature: the most common loan purpose is not the riskiest, so the model must treat this as a categorical signal rather than a proxy for data density.
+The horizontal bar chart (Q2) ranks all 14 loan purposes by default rate alongside their loan volumes. `small_business` loans carry the highest default rate at approximately 30%, followed by `renewable_energy` and `moving` at around 23%. The safest purposes are `wedding` and `car` at 12–14%. `debt_consolidation` dominates the portfolio by volume - nearly 800 thousand completed loans - yet sits at a moderate 21% default rate, close to the dataset average. The divergence between volume and risk makes purpose a useful feature: the most common loan purpose is not the riskiest, so the model must treat this as a categorical signal rather than a proxy for data density.
 
 #### Default Rate over Time
 
-The line chart (Q3) tracks completed-loan volume and default rate by issue year from 2007 to 2018. Loan issuance grew from a few thousand records in 2007 to a peak of roughly 375 thousand in 2015, then declined as the dataset ends partway through 2018. The default rate began at approximately 26% in 2007 — a small early cohort with elevated risk — dropped sharply to around 14% in 2008–2010 as post-financial-crisis underwriting tightened, and then gradually climbed back to 23% by 2016–2017 as Lending Club expanded its borrower base. The apparent decline to 16% in 2018 is an artifact of loan immaturity: recently issued loans have not had sufficient time to default, so the completed-loan filter underrepresents defaults for the most recent cohorts. This temporal non-stationarity means a machine learning model should not be trained and evaluated on a random split; a time-based split is required to avoid leakage.
+The line chart (Q3) tracks completed-loan volume and default rate by issue year from 2007 to 2018. Loan issuance grew from a few thousand records in 2007 to a peak of roughly 375 thousand in 2015, then declined as the dataset ends partway through 2018. The default rate began at approximately 26% in 2007 - a small early cohort with elevated risk - dropped sharply to around 14% in 2008–2010 as post-financial-crisis underwriting tightened, and then gradually climbed back to 23% by 2016–2017 as Lending Club expanded its borrower base. The apparent decline to 16% in 2018 is an artifact of loan immaturity: recently issued loans have not had sufficient time to default, so the completed-loan filter underrepresents defaults for the most recent cohorts. This temporal non-stationarity means a machine learning model should not be trained and evaluated on a random split; a time-based split is required to avoid leakage.
 
 #### Default Rate by Debt-to-Income Ratio
 
@@ -174,9 +174,9 @@ The heatmap (Q5) shows default rates for all 21 combinations of loan grade (A–
 
 #### FICO Score and Default Risk
 
-The bubble chart (Q6) plots average FICO score against default rate for six score buckets (610–650 through 750+), with bubble area proportional to the number of completed loans in each bucket. The relationship is monotonically negative and nearly linear: default rate falls from approximately 32% at the 610–650 bucket to 9% at 750+, with each 25-point FICO increment reducing default rate by around 4–5 percentage points. The 675–700 bucket is the largest, reflecting the concentration of Lending Club's borrower base in the near-prime credit range. The small 610–650 bubble confirms that very low FICO scores are rare in the accepted-loan population — consistent with Lending Club's minimum credit score requirements — but when they occur they carry a disproportionately high default rate.
+The bubble chart (Q6) plots average FICO score against default rate for six score buckets (610–650 through 750+), with bubble area proportional to the number of completed loans in each bucket. The relationship is monotonically negative and nearly linear: default rate falls from approximately 32% at the 610–650 bucket to 9% at 750+, with each 25-point FICO increment reducing default rate by around 4–5 percentage points. The 675–700 bucket is the largest, reflecting the concentration of Lending Club's borrower base in the near-prime credit range. The small 610–650 bubble confirms that very low FICO scores are rare in the accepted-loan population - consistent with Lending Club's minimum credit score requirements - but when they occur they carry a disproportionately high default rate.
 
-## Stage 3 — Predictive Data Analytics
+## Stage 3 - Predictive Data Analytics
 
 The goal of this stage is to build, tune, evaluate, and compare distributed machine learning models for loan default prediction. The predictive analytics pipeline is implemented with **PySpark ML** and executed on the Hadoop YARN cluster using `spark-submit --master yarn`, so all preprocessing, training, cross-validation, and evaluation steps are performed on distributed Spark DataFrames.
 
@@ -262,9 +262,9 @@ The optimization metric for cross-validation is `areaUnderPR`. This metric is mo
 
 The tuned model artifacts are saved as:
 
-- `project/models/model1` — best Random Forest model;
-- `project/models/model2` — best Linear SVC model;
-- `project/models/model3` — best Naive Bayes model.
+- `project/models/model1` - best Random Forest model;
+- `project/models/model2` - best Linear SVC model;
+- `project/models/model3` - best Naive Bayes model.
 
 The corresponding prediction outputs are saved as:
 
@@ -343,3 +343,61 @@ The complete Stage III workflow is automated by `scripts/stage3.sh`. The script 
 - `output/dashboard/` for Superset-ready dashboard tables.
 
 This ensures that the predictive analytics stage is reproducible and can be re-run end-to-end from a single command.
+
+---
+
+## Stage 4 - Presentation and Delivery
+
+The goal of this stage is to present all analytical and modeling results in an interactive Apache Superset dashboard accessible to business stakeholders. The dashboard is divided into three tabs, each targeting a distinct audience need: **Data Description**, **Data Insights**, and **ML Modeling**.
+
+### Data Description
+
+This tab covers the structural characteristics of the `loans` PostgreSQL table and the cleaning steps applied before ingestion:
+
+- **Big Number** chart - total record count of 2.26 million loans.
+- **Column Datatypes** table - queries `information_schema.columns` to display the name, data type, and nullability of all 26 columns.
+- **Sample Data** table - 10 rows drawn directly from the `loans` table to illustrate value formats and ranges.
+- **Data Cleaning** text block - documents the transformations applied by `filter_dataset_for_pg.py`: percent signs stripped from rate fields, term strings reduced to plain integers, date fields converted from `Mon-YYYY` format to ISO dates, and rows with unparseable identifiers or dates dropped.
+
+### Data Insights
+
+This tab presents the six EDA charts produced by the Stage II HiveQL queries, arranged in a two-column layout:
+
+- **Line chart** - default rate and loan volume trend by issue year (Q3).
+- **Horizontal bar chart** - default rate and loan count by loan purpose (Q2).
+- **Bar chart** - default rate and average interest rate by loan grade (Q1).
+- **Bar chart** - default rate by debt-to-income ratio bucket (Q4).
+- **Bubble chart** - average FICO score versus default rate with bubble size proportional to loan count (Q6).
+- **Heatmap** - default rate for all combinations of loan grade and home ownership status (Q5).
+
+### ML Modeling
+
+This tab is organized into three sections.
+
+#### Characteristics of Data
+
+This section presents the feature extraction and data preparation results:
+
+- **Bar chart** - train and test split sizes, showing the balanced encoded training dataset at approximately 1.4 million rows after upsampling versus roughly 404 thousand rows in the unchanged test set.
+- **Pie chart** - feature type breakdown: 20 numeric and 7 categorical input variables.
+- **Stacked horizontal bar chart** - class distribution across all six dataset stages (`full_prepared_raw`, `train_raw`, `test_raw`, `train_encoded_before_balancing`, `train_encoded`, `test_encoded`), illustrating that all stages except `train_encoded` reflect the original approximately 80/20 class imbalance, while `train_encoded` shows a near-equal split after upsampling.
+
+#### Optimization and Evaluation Results
+
+This section presents the hyperparameter optimization and model evaluation results:
+
+- **Text block** - describes the grid search setup: 3-fold cross-validation, `areaUnderROC` as the optimization metric, a 27-combination parameter grid per model, and the winning hyperparameters found for each model.
+- **Grouped bar chart (tuned models)** - compares ROC-AUC, F1, and PR-AUC for the best Random Forest, Linear SVC, and Naive Bayes models after grid search.
+- **Grouped bar chart (baseline models)** - the same metrics for the baseline versions of all three models, placed side by side with the tuned chart to make the improvement from grid search immediately visible.
+
+#### Prediction Results
+
+This section presents the per-model prediction behavior on the test set:
+
+- **Confusion matrix heatmap - Random Forest** - predicted class on the x-axis, true class on the y-axis, cell brightness proportional to count.
+- **Confusion matrix heatmap - Linear SVC** - same layout as above.
+- **Confusion matrix heatmap - Naive Bayes** - same layout as above.
+
+### Automation
+
+The Stage IV Hive registration step is automated by `scripts/stage4.sh`. The script loads environment variables from `.env` and executes `scripts/load_ml_hive_tables.py`, which reads the six HDFS CSV directories produced by Stage III and registers them as external Hive tables in the `team25_projectdb` database using the DDL defined in `sql/ml_results.hql`. The registered tables - `ml_split_summary`, `ml_feature_info`, `ml_label_distribution`, `ml_baseline_evaluation`, `ml_evaluation`, and `ml_prediction_distribution` - are connected directly to Superset as datasets, so the dashboard charts query live Hive data rather than static files.

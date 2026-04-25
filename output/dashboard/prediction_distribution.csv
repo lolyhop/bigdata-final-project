@@ -1,0 +1,13 @@
+model,label,prediction,count
+RandomForest,1.0,1.0,57063
+RandomForest,0.0,1.0,134457
+RandomForest,1.0,0.0,23748
+RandomForest,0.0,0.0,188698
+LinearSVC,1.0,1.0,55603
+LinearSVC,0.0,1.0,134088
+LinearSVC,1.0,0.0,25208
+LinearSVC,0.0,0.0,189067
+NaiveBayes,1.0,1.0,52859
+NaiveBayes,0.0,1.0,120022
+NaiveBayes,1.0,0.0,27952
+NaiveBayes,0.0,0.0,203133
