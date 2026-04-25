@@ -1,3 +1,5 @@
+"""Register the Sqoop Parquet data in Hive by creating the curated loans table."""
+
 import logging
 import sys
 
@@ -31,7 +33,8 @@ def run_hive_ddl() -> None:
     hive_warehouse_dir = settings.HIVE_WAREHOUSE_DIR
 
     LOGGER.info(
-        "Hive DDL: database=%s final_table=%s staging_table_1=%s staging_table_2=%s sqoop_location=%s warehouse=%s",
+        "Hive DDL: database=%s final_table=%s staging_table_1=%s "
+        "staging_table_2=%s sqoop_location=%s warehouse=%s",
         hive_db,
         final_table,
         staging_table_1,
@@ -44,7 +47,7 @@ def run_hive_ddl() -> None:
     try:
         hive_utils.execute_hql(
             conn_default,
-            "CREATE DATABASE IF NOT EXISTS {hive_db}".format(hive_db=hive_db),
+            f"CREATE DATABASE IF NOT EXISTS {hive_db}",
         )
     finally:
         conn_default.close()

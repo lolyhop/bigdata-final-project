@@ -1,3 +1,5 @@
+"""Recreate the PostgreSQL loans table and bulk-load data from a filtered CSV."""
+
 import logging
 import sys
 from pathlib import Path
@@ -22,7 +24,7 @@ def load(csv_path: Path, table_name: str) -> None:
         psycopg2.Error: On any database error.
     """
     if not csv_path.is_file():
-        raise FileNotFoundError("Input CSV not found: {}".format(csv_path))
+        raise FileNotFoundError(f"Input CSV not found: {csv_path}")
 
     create_table_sql = pg_utils.read_sql("create_table.sql", table_name=table_name)
     import_data_sql = pg_utils.read_sql("import_data.sql", table_name=table_name)
@@ -40,8 +42,8 @@ def load(csv_path: Path, table_name: str) -> None:
 
         with conn.cursor() as cur:
             LOGGER.info("Loading %s into %s ...", csv_path, table_name)
-            with csv_path.open("r", encoding="utf-8") as fh:
-                cur.copy_expert(copy_stmt, fh)
+            with csv_path.open("r", encoding="utf-8") as csv_file:
+                cur.copy_expert(copy_stmt, csv_file)
             for stmt in post_import_stmts:
                 LOGGER.info("Executing: %s", stmt.split("\n", 1)[0][:120])
                 cur.execute(stmt)

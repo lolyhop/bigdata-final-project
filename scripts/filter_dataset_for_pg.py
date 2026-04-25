@@ -1,3 +1,5 @@
+"""Stream-filter the raw Lending Club CSV down to the columns needed by PostgreSQL."""
+
 import csv
 import logging
 import re
@@ -177,7 +179,7 @@ def _validate_headers(fieldnames: Optional[List[str]]) -> None:
     present = {h.strip() for h in fieldnames if h is not None}
     missing = sorted(set(LOAN_CSV_COLUMNS) - present)
     if missing:
-        msg = "Missing required columns: {}".format(", ".join(missing))
+        msg = f"Missing required columns: {', '.join(missing)}"
         raise ValueError(msg)
 
 

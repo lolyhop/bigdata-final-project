@@ -1,12 +1,15 @@
+"""EDA query 4: run q4.hql against Hive and export results to output/q4.csv."""
+
 import logging
 import sys
 from pathlib import Path
 
 from pyhive.exc import DatabaseError, OperationalError, ProgrammingError
 
+# Scripts directory is not a package; insert it into sys.path for local imports.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import hive_utils
-import settings
+import hive_utils  # pylint: disable=wrong-import-position
+import settings  # pylint: disable=wrong-import-position
 
 _OUTPUT_DIR: Path = Path(__file__).resolve().parents[2] / "output"
 

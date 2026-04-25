@@ -1,3 +1,5 @@
+"""Hyperparameter-tune Random Forest, Linear SVC, and Naive Bayes via cross-validation."""
+
 import os
 
 from pyspark.sql import SparkSession
@@ -40,6 +42,11 @@ ML_OPTIMIZATION_METRIC = os.environ.get("ML_OPTIMIZATION_METRIC")
 
 
 def build_spark():
+    """Create and return a Spark session connected to YARN.
+
+    Returns:
+        Active SparkSession.
+    """
     return (
         SparkSession.builder.appName("team25 - train tuned models")
         .master("yarn")
@@ -48,16 +55,41 @@ def build_spark():
 
 
 def get_train_dataset(spark):
+    """Read the encoded training parquet from HDFS.
+
+    Args:
+        spark: Active SparkSession.
+
+    Returns:
+        Training Spark DataFrame.
+    """
     print("Reading train dataset from:", ML_TRAIN_ENCODED_PATH)
     return spark.read.parquet(ML_TRAIN_ENCODED_PATH)
 
 
 def get_test_dataset(spark):
+    """Read the encoded test parquet from HDFS.
+
+    Args:
+        spark: Active SparkSession.
+
+    Returns:
+        Test Spark DataFrame.
+    """
     print("Reading encoded test dataset from:", ML_TEST_ENCODED_PATH)
     return spark.read.parquet(ML_TEST_ENCODED_PATH)
 
 
 def tune_random_forest(train_df, test_df):
+    """Cross-validate a Random Forest classifier and evaluate the best model.
+
+    Args:
+        train_df: Encoded training DataFrame with ``features`` and ``label`` columns.
+        test_df: Encoded test DataFrame used for final evaluation.
+
+    Returns:
+        Tuple of ``(cv_model, predictions, metrics)``.
+    """
     rf = RandomForestClassifier(
         labelCol="label",
         featuresCol="features",
@@ -94,6 +126,15 @@ def tune_random_forest(train_df, test_df):
 
 
 def tune_linear_svc(train_df, test_df):
+    """Cross-validate a Linear SVC and evaluate the best model.
+
+    Args:
+        train_df: Encoded training DataFrame with ``features`` and ``label`` columns.
+        test_df: Encoded test DataFrame used for final evaluation.
+
+    Returns:
+        Tuple of ``(cv_model, predictions, metrics)``.
+    """
     svc = LinearSVC(
         labelCol="label",
         featuresCol="features",
@@ -129,6 +170,15 @@ def tune_linear_svc(train_df, test_df):
 
 
 def tune_naive_bayes(train_df, test_df):
+    """Cross-validate a MinMaxScaler → Naive Bayes pipeline and evaluate the best model.
+
+    Args:
+        train_df: Encoded training DataFrame with ``features`` and ``label`` columns.
+        test_df: Encoded test DataFrame used for final evaluation.
+
+    Returns:
+        Tuple of ``(cv_model, predictions, metrics)``.
+    """
     scaler = MinMaxScaler(
         inputCol="features",
         outputCol="features_scaled",
@@ -172,6 +222,7 @@ def tune_naive_bayes(train_df, test_df):
 
 
 def main():
+    """Tune all three models, evaluate them, and save models, predictions, and metrics."""
     spark = build_spark()
 
     train_df = get_train_dataset(spark)

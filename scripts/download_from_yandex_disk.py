@@ -1,3 +1,5 @@
+"""Download a public Yandex Disk share to a local file via the public API."""
+
 import json
 import logging
 import sys
@@ -29,7 +31,7 @@ def _fetch_download_href(public_share_url: str) -> str:
         HTTPError: On HTTP failure from the Yandex API.
         URLError: On network errors.
     """
-    api_url = "{}{}".format(_API_BASE, ul.quote_plus(public_share_url.strip()))
+    api_url = f"{_API_BASE}{ul.quote_plus(public_share_url.strip())}"
     request = urllib.request.Request(
         api_url, headers={"User-Agent": "bigdata-final-project/1.0"}
     )

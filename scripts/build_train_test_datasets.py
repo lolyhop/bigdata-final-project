@@ -1,3 +1,5 @@
+"""Split the prepared ML dataset into train/test partitions and encode features."""
+
 import os
 
 from pyspark.sql import SparkSession
@@ -45,6 +47,11 @@ ML_LABEL_DISTRIBUTION_PATH = os.environ.get("ML_LABEL_DISTRIBUTION_PATH")
 
 
 def build_spark():
+    """Create and return a Spark session connected to YARN.
+
+    Returns:
+        Active SparkSession.
+    """
     return (
         SparkSession.builder.appName("team25 - build train test datasets")
         .master("yarn")
@@ -53,10 +60,25 @@ def build_spark():
 
 
 def save_csv(df, output_path):
+    """Write *df* to *output_path* as a single-partition CSV with a header.
+
+    Args:
+        df: Spark DataFrame to persist.
+        output_path: HDFS destination path.
+    """
     (df.coalesce(1).write.mode("overwrite").option("header", "true").csv(output_path))
 
 
 def build_label_distribution_df(df, dataset_name):
+    """Return a DataFrame with label counts and share for *df*.
+
+    Args:
+        df: Spark DataFrame containing a ``label`` column.
+        dataset_name: Identifier string written to the ``dataset`` column.
+
+    Returns:
+        Spark DataFrame with columns ``dataset``, ``label``, ``count``, ``share``.
+    """
     total = df.count()
 
     distribution_df = (
@@ -79,6 +101,19 @@ def build_split_summary_df(
     test_encoded_count,
     feature_count,
 ):
+    """Return a DataFrame summarising dataset split row counts.
+
+    Args:
+        spark: Active SparkSession.
+        train_raw_count: Number of rows in the raw train split.
+        test_raw_count: Number of rows in the raw test split.
+        train_encoded_count: Number of rows in the encoded train split.
+        test_encoded_count: Number of rows in the encoded test split.
+        feature_count: Total number of assembled feature dimensions.
+
+    Returns:
+        Spark DataFrame with columns ``dataset``, ``rows``, ``feature_count``.
+    """
     rows = [
         ("train_raw", train_raw_count, feature_count),
         ("test_raw", test_raw_count, feature_count),
@@ -93,6 +128,16 @@ def build_split_summary_df(
 
 
 def build_feature_info_df(spark, numeric_cols, categorical_cols):
+    """Return a DataFrame listing each feature and its type.
+
+    Args:
+        spark: Active SparkSession.
+        numeric_cols: List of numeric feature column names.
+        categorical_cols: List of categorical feature column names.
+
+    Returns:
+        Spark DataFrame with columns ``feature_name``, ``feature_type``.
+    """
     rows = [(name, "numeric") for name in numeric_cols] + [
         (name, "categorical") for name in categorical_cols
     ]
@@ -101,6 +146,11 @@ def build_feature_info_df(spark, numeric_cols, categorical_cols):
 
 
 def get_feature_columns():
+    """Return the canonical lists of numeric and categorical feature column names.
+
+    Returns:
+        Tuple of ``(numeric_cols, categorical_cols)``.
+    """
     numeric_cols = [
         "loan_amnt",
         "term",
@@ -138,44 +188,71 @@ def get_feature_columns():
 
 
 def compute_mode_fill_map(df, columns):
+    """Compute the mode of each column in *columns* from *df*.
+
+    Args:
+        df: Spark DataFrame to compute modes from.
+        columns: Column names to compute modes for.
+
+    Returns:
+        Dict mapping column name to its mode value (missing columns omitted).
+    """
     fill_map = {}
 
-    for c in columns:
+    for col in columns:
         mode_row = (
-            df.where(F.col(c).isNotNull())
-            .groupBy(c)
+            df.where(F.col(col).isNotNull())
+            .groupBy(col)
             .count()
-            .orderBy(F.desc("count"), F.asc(c))
+            .orderBy(F.desc("count"), F.asc(col))
             .first()
         )
 
         if mode_row is not None:
-            fill_map[c] = mode_row[0]
+            fill_map[col] = mode_row[0]
 
     return fill_map
 
 
 def apply_fill_map(df, fill_map):
+    """Fill null values in *df* using *fill_map*.
+
+    Args:
+        df: Spark DataFrame to fill.
+        fill_map: Dict mapping column names to fill values.
+
+    Returns:
+        DataFrame with nulls replaced; unchanged if *fill_map* is empty.
+    """
     if fill_map:
         return df.fillna(fill_map)
     return df
 
 
 def build_encoding_pipeline(categorical_cols, numeric_cols):
+    """Build a Spark ML Pipeline that indexes, encodes, and assembles features.
+
+    Args:
+        categorical_cols: Column names to StringIndex and OneHotEncode.
+        numeric_cols: Column names to pass through directly to the assembler.
+
+    Returns:
+        Unfitted ``Pipeline`` with StringIndexer → OneHotEncoder → VectorAssembler stages.
+    """
     stages = []
     indexed_cols = []
     encoded_cols = []
 
-    for c in categorical_cols:
-        indexed = "{}_idx".format(c)
+    for col in categorical_cols:
+        indexed = f"{col}_idx"
         indexed_cols.append(indexed)
 
         stages.append(
-            StringIndexer(inputCol=c, outputCol=indexed, handleInvalid="keep")
+            StringIndexer(inputCol=col, outputCol=indexed, handleInvalid="keep")
         )
 
     for indexed in indexed_cols:
-        encoded = "{}_ohe".format(indexed.replace("_idx", ""))
+        encoded = f"{indexed.replace('_idx', '')}_ohe"
         encoded_cols.append(encoded)
         stages.append(OneHotEncoder(inputCol=indexed, outputCol=encoded))
 
@@ -188,9 +265,14 @@ def build_encoding_pipeline(categorical_cols, numeric_cols):
 
 
 def balance_train_dataset(train_df):
-    """
-    Simple upsampling of minority class to match majority class.
-    Test set must never be touched.
+    """Upsample the minority class in *train_df* to match the majority class size.
+
+    Args:
+        train_df: Encoded training DataFrame with a ``label`` column.
+
+    Returns:
+        Balanced DataFrame (majority unchanged, minority repeated/sampled up).
+        Returns *train_df* unchanged if either class is absent.
     """
     class_counts = {
         row["label"]: row["count"]
@@ -237,8 +319,11 @@ def balance_train_dataset(train_df):
 
 
 def save_json_artifact(df, output_path):
-    """
-    Keep only label and features and save as one partition.
+    """Write the ``features`` and ``label`` columns of *df* to *output_path* as JSON.
+
+    Args:
+        df: Spark DataFrame containing ``features`` and ``label`` columns.
+        output_path: HDFS destination path for the JSON files.
     """
     (
         df.select("features", "label")
@@ -249,6 +334,7 @@ def save_json_artifact(df, output_path):
 
 
 def main():
+    """Orchestrate the full train/test split, encoding, and artifact-saving pipeline."""
     spark = build_spark()
 
     print("Reading prepared raw dataset from:", ML_PREPARED_RAW_PATH)

@@ -1,3 +1,5 @@
+"""Train and evaluate Random Forest, Linear SVC, and Naive Bayes baseline models."""
+
 import os
 
 from pyspark.sql import SparkSession
@@ -22,6 +24,11 @@ ML_BASELINE_EVALUATION_PATH = os.environ.get("ML_BASELINE_EVALUATION_PATH")
 
 
 def build_spark():
+    """Create and return a Spark session connected to YARN.
+
+    Returns:
+        Active SparkSession.
+    """
     return (
         SparkSession.builder.appName("team25 - train baseline models")
         .master("yarn")
@@ -30,6 +37,15 @@ def build_spark():
 
 
 def train_random_forest(train_df, test_df):
+    """Fit a baseline Random Forest classifier and evaluate it on *test_df*.
+
+    Args:
+        train_df: Encoded training DataFrame with ``features`` and ``label`` columns.
+        test_df: Encoded test DataFrame used for evaluation.
+
+    Returns:
+        Tuple of ``(model, predictions, metrics)``.
+    """
     model = RandomForestClassifier(
         labelCol="label",
         featuresCol="features",
@@ -45,6 +61,15 @@ def train_random_forest(train_df, test_df):
 
 
 def train_linear_svc(train_df, test_df):
+    """Fit a baseline Linear SVC and evaluate it on *test_df*.
+
+    Args:
+        train_df: Encoded training DataFrame with ``features`` and ``label`` columns.
+        test_df: Encoded test DataFrame used for evaluation.
+
+    Returns:
+        Tuple of ``(model, predictions, metrics)``.
+    """
     model = LinearSVC(
         labelCol="label",
         featuresCol="features",
@@ -59,6 +84,15 @@ def train_linear_svc(train_df, test_df):
 
 
 def train_naive_bayes(train_df, test_df):
+    """Fit a MinMaxScaler → Naive Bayes pipeline and evaluate it on *test_df*.
+
+    Args:
+        train_df: Encoded training DataFrame with ``features`` and ``label`` columns.
+        test_df: Encoded test DataFrame used for evaluation.
+
+    Returns:
+        Tuple of ``(pipeline_model, predictions, metrics)``.
+    """
     scaler = MinMaxScaler(
         inputCol="features",
         outputCol="features_scaled",
@@ -81,6 +115,7 @@ def train_naive_bayes(train_df, test_df):
 
 
 def main():
+    """Train all three baseline models and save predictions and evaluation summary."""
     spark = build_spark()
 
     print("Reading encoded train dataset from:", ML_TRAIN_ENCODED_PATH)

@@ -1,0 +1,14 @@
+[MESSAGES CONTROL]
+disable =
+    # Boilerplate exception-handling blocks in scripts are intentional.
+    duplicate-code
+
+[BASIC]
+# Standard data-science / ML abbreviations that are clearer short.
+good-names = i,j,k,ex,Run,_,df,tp,tn,fp,fn,f1,nb,rf,cv
+
+[DESIGN]
+# Pipeline main() functions are naturally verbose; relax the defaults slightly.
+max-args = 6
+max-locals = 30
+max-statements = 85

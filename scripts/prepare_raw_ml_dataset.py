@@ -1,3 +1,5 @@
+"""Prepare the raw Hive parquet for ML: restore dates, add features, filter labels."""
+
 import math
 import os
 
@@ -12,20 +14,42 @@ ML_PREPARED_RAW_PATH = os.environ.get(
 
 
 def build_spark():
+    """Create and return a Spark session connected to YARN.
+
+    Returns:
+        Active SparkSession.
+    """
     return (
         SparkSession.builder
         .appName("team25 - prepare raw ml dataset")
         .master("yarn")
         .getOrCreate()
-
     )
 
+
 def read_source_dataset(spark):
+    """Read the raw Sqoop parquet from HDFS.
+
+    Args:
+        spark: Active SparkSession.
+
+    Returns:
+        Spark DataFrame containing the raw loans dataset.
+    """
     print("Reading from:", HDFS_DATA_DIR)
     return spark.read.parquet(HDFS_DATA_DIR)
 
 
 def restore_datetime_columns(df):
+    """Cast epoch-millisecond integer columns to proper date columns.
+
+    Args:
+        df: Spark DataFrame that may contain ``issue_d`` and ``earliest_cr_line``
+            as integer epoch-millisecond columns (Sqoop artefact).
+
+    Returns:
+        DataFrame with those columns cast to ``date`` type.
+    """
     issue_type = dict(df.dtypes).get("issue_d")
     earliest_type = dict(df.dtypes).get("earliest_cr_line")
 
@@ -44,6 +68,15 @@ def restore_datetime_columns(df):
 
 
 def add_datetime_features(df):
+    """Derive cyclic month and credit-history features from date columns.
+
+    Args:
+        df: Spark DataFrame with ``issue_d`` and ``earliest_cr_line`` date columns.
+
+    Returns:
+        DataFrame with added ``issue_year``, ``issue_month``, ``issue_month_sin``,
+        ``issue_month_cos``, and ``credit_history_months`` columns.
+    """
     df = df.withColumn("issue_year", F.year("issue_d"))
     df = df.withColumn("issue_month", F.month("issue_d"))
 
@@ -65,6 +98,14 @@ def add_datetime_features(df):
 
 
 def select_and_prepare_rows(df):
+    """Filter to binary-label rows and select only the model-relevant columns.
+
+    Args:
+        df: Spark DataFrame with the full feature set after datetime engineering.
+
+    Returns:
+        Filtered DataFrame with a ``label`` column and only the selected features.
+    """
     df = df.filter(F.col("loan_status").isin("Fully Paid", "Charged Off"))
 
     df = df.withColumn(
@@ -112,6 +153,7 @@ def select_and_prepare_rows(df):
 
 
 def main():
+    """Orchestrate dataset preparation: restore dates, engineer features, save parquet."""
     spark = build_spark()
 
     df = read_source_dataset(spark)

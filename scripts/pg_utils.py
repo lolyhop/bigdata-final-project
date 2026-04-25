@@ -1,3 +1,5 @@
+"""PostgreSQL connection helpers and SQL file loader for the loans pipeline."""
+
 from pathlib import Path
 
 import psycopg2

@@ -1,3 +1,5 @@
+"""HiveServer2 connection helpers, HQL file loader, and CSV export utilities."""
+
 import csv
 import logging
 from pathlib import Path
@@ -112,8 +114,8 @@ def fetch_to_csv(conn: Any, table: str, csv_path: Path) -> None:
         cursor.close()
 
     csv_path.parent.mkdir(parents=True, exist_ok=True)
-    with csv_path.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.writer(fh)
+    with csv_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
         writer.writerow(headers)
         writer.writerows(rows)
     LOGGER.info("Wrote %d rows to %s.", len(rows), csv_path)

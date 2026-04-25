@@ -1,3 +1,5 @@
+"""Register the six external ML-result Hive tables produced by Stage III."""
+
 import logging
 import os
 import sys
@@ -35,7 +37,7 @@ def _require_env(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
         raise settings.SettingsError(
-            "{} must be set to a non-empty HDFS path.".format(name)
+            f"{name} must be set to a non-empty HDFS path."
         )
     return value
 

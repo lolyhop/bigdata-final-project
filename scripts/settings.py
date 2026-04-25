@@ -1,3 +1,5 @@
+"""Load and validate all pipeline configuration from environment variables and .env."""
+
 import os
 import re
 from pathlib import Path
@@ -59,7 +61,7 @@ if not TABLE_NAME:
     raise SettingsError("TABLE_NAME must be set to a non-empty value.")
 if not _IDENTIFIER_RE.match(TABLE_NAME):
     raise SettingsError(
-        "TABLE_NAME must match [a-zA-Z_][a-zA-Z0-9_]*, got {0!r}.".format(TABLE_NAME)
+        f"TABLE_NAME must match [a-zA-Z_][a-zA-Z0-9_]*, got {TABLE_NAME!r}."
     )
 
 _raw_host = os.environ.get("PGHOST")
@@ -74,8 +76,10 @@ if _raw_port is None or not str(_raw_port).strip():
 else:
     try:
         PGPORT = int(str(_raw_port).strip())
-    except ValueError:
-        raise SettingsError("PGPORT must be an integer, got {0!r}.".format(_raw_port))
+    except ValueError as exc:
+        raise SettingsError(
+            f"PGPORT must be an integer, got {_raw_port!r}."
+        ) from exc
 
 _raw_user = os.environ.get("PGUSER")
 if _raw_user is None or not isinstance(_raw_user, str) or not _raw_user.strip():
@@ -113,9 +117,7 @@ if (
 HIVE_DATABASE = _raw_hive_db.strip()
 if not _IDENTIFIER_RE.match(HIVE_DATABASE):
     raise SettingsError(
-        "HIVE_DATABASE must match [a-zA-Z_][a-zA-Z0-9_]*, got {0!r}.".format(
-            HIVE_DATABASE
-        )
+        f"HIVE_DATABASE must match [a-zA-Z_][a-zA-Z0-9_]*, got {HIVE_DATABASE!r}."
     )
 
 _raw_hive_host = os.environ.get("HIVE_HOST")
@@ -128,10 +130,10 @@ if _raw_hive_port is None or not str(_raw_hive_port).strip():
     raise SettingsError("HIVE_PORT must be set to a non-empty value.")
 try:
     HIVE_PORT = int(str(_raw_hive_port).strip())
-except ValueError:
+except ValueError as exc:
     raise SettingsError(
-        "HIVE_PORT must be an integer, got {0!r}.".format(_raw_hive_port)
-    )
+        f"HIVE_PORT must be an integer, got {_raw_hive_port!r}."
+    ) from exc
 
 _raw_hive_user = os.environ.get("HIVE_USER")
 if _raw_hive_user is None or not str(_raw_hive_user).strip():
