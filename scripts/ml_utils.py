@@ -107,6 +107,14 @@ def save_predictions(predictions, output_path):
     )
 
 
+def pipeline_model_params_to_string(pipeline_model):
+    pairs = []
+    for stage in pipeline_model.stages:
+        for param, value in stage.extractParamMap().items():
+            pairs.append("{}__{}={}".format(stage.uid, param.name, value))
+    return "; ".join(sorted(pairs))
+
+
 def param_map_to_string(model):
     param_map = model.extractParamMap()
     pairs = []
