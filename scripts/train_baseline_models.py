@@ -2,7 +2,7 @@ import os
 
 from pyspark.sql import SparkSession
 from pyspark.ml import Pipeline
-from pyspark.ml.feature import MinMaxScaler, Binarizer
+from pyspark.ml.feature import MinMaxScaler
 from pyspark.ml.classification import RandomForestClassifier, LinearSVC, NaiveBayes
 
 from ml_utils import evaluate_binary_predictions, save_predictions, save_metrics_csv

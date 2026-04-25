@@ -3,7 +3,7 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier, LinearSVC, NaiveBayes
-from pyspark.ml.feature import MinMaxScaler, Binarizer
+from pyspark.ml.feature import MinMaxScaler
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
 
@@ -13,9 +13,10 @@ from ml_utils import (
     param_map_to_string,
     save_metrics_csv,
     build_prediction_distribution_df,
+    pipeline_model_params_to_string,
 )
 
-ML_TRAIN_ENCODED_PATH = os.environ.get("ML_TRAIN_BALANCED_PATH")
+ML_TRAIN_ENCODED_PATH = os.environ.get("ML_TRAIN_ENCODED_PATH")
 ML_TEST_ENCODED_PATH = os.environ.get("ML_TEST_ENCODED_PATH")
 
 ML_MODEL1_PATH = os.environ.get("ML_MODEL1_PATH")
@@ -54,22 +55,6 @@ def get_train_dataset(spark):
 def get_test_dataset(spark):
     print("Reading encoded test dataset from:", ML_TEST_ENCODED_PATH)
     return spark.read.parquet(ML_TEST_ENCODED_PATH)
-
-
-def build_cv(estimator):
-    evaluator = BinaryClassificationEvaluator(
-        labelCol="label",
-        rawPredictionCol="rawPrediction",
-        metricName=ML_OPTIMIZATION_METRIC,
-    )
-
-    return CrossValidator(
-        estimator=estimator,
-        evaluator=evaluator,
-        estimatorParamMaps=[],
-        numFolds=ML_CV_FOLDS,
-        parallelism=ML_CV_PARALLELISM,
-    )
 
 
 def tune_random_forest(train_df, test_df):
@@ -161,6 +146,7 @@ def tune_naive_bayes(train_df, test_df):
         ParamGridBuilder()
         .addGrid(scaler.max, [1.0, 2.0, 5.0])
         .addGrid(nb.smoothing, [0.5, 1.0, 1.5])
+        .addGrid(nb.thresholds, [[1.0, 1.0], [1.0, 2.0], [2.0, 1.0]])
         .build()
     )
 
@@ -238,7 +224,7 @@ def main():
 
     print("\nTraining tuned Naive Bayes")
     nb_cv_model, nb_predictions, nb_metrics = tune_naive_bayes(train_df, test_df)
-    nb_best_params = param_map_to_string(nb_cv_model.bestModel)
+    nb_best_params = pipeline_model_params_to_string(nb_cv_model.bestModel)
     print("Naive Bayes metrics:", nb_metrics)
 
     print("Saving Naive Bayes best model to:", ML_MODEL3_PATH)
