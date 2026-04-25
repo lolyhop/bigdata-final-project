@@ -247,6 +247,7 @@ def save_json_artifact(df, output_path):
         .json(output_path)
     )
 
+
 def main():
     spark = build_spark()
 
@@ -278,9 +279,7 @@ def main():
     train_raw_label_distribution_df = build_label_distribution_df(
         train_raw, "train_raw"
     )
-    test_raw_label_distribution_df = build_label_distribution_df(
-        test_raw, "test_raw"
-    )
+    test_raw_label_distribution_df = build_label_distribution_df(test_raw, "test_raw")
 
     print("\nSaving raw train split to:", ML_TRAIN_RAW_PATH)
     train_raw.write.mode("overwrite").parquet(ML_TRAIN_RAW_PATH)
@@ -320,9 +319,13 @@ def main():
 
     train_encoded_before_balancing_count = train_encoded_before_balancing.count()
     test_encoded_count = test_encoded.count()
-    feature_count = train_encoded_before_balancing.select("features").first()["features"].size
+    feature_count = (
+        train_encoded_before_balancing.select("features").first()["features"].size
+    )
 
-    print("\nTrain encoded rows before balancing:", train_encoded_before_balancing_count)
+    print(
+        "\nTrain encoded rows before balancing:", train_encoded_before_balancing_count
+    )
     print("Test encoded rows:", test_encoded_count)
     print("Number of assembled features:", feature_count)
 
@@ -389,8 +392,7 @@ def main():
     )
 
     label_distribution_df = (
-        full_label_distribution_df
-        .unionByName(train_raw_label_distribution_df)
+        full_label_distribution_df.unionByName(train_raw_label_distribution_df)
         .unionByName(test_raw_label_distribution_df)
         .unionByName(train_encoded_before_balancing_label_distribution_df)
         .unionByName(train_encoded_label_distribution_df)

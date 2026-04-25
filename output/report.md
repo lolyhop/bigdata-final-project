@@ -175,3 +175,171 @@ The heatmap (Q5) shows default rates for all 21 combinations of loan grade (A–
 #### FICO Score and Default Risk
 
 The bubble chart (Q6) plots average FICO score against default rate for six score buckets (610–650 through 750+), with bubble area proportional to the number of completed loans in each bucket. The relationship is monotonically negative and nearly linear: default rate falls from approximately 32% at the 610–650 bucket to 9% at 750+, with each 25-point FICO increment reducing default rate by around 4–5 percentage points. The 675–700 bucket is the largest, reflecting the concentration of Lending Club's borrower base in the near-prime credit range. The small 610–650 bubble confirms that very low FICO scores are rare in the accepted-loan population — consistent with Lending Club's minimum credit score requirements — but when they occur they carry a disproportionately high default rate.
+
+## Stage 3 — Predictive Data Analytics
+
+The goal of this stage is to build, tune, evaluate, and compare distributed machine learning models for loan default prediction. The predictive analytics pipeline is implemented with **PySpark ML** and executed on the Hadoop YARN cluster using `spark-submit --master yarn`, so all preprocessing, training, cross-validation, and evaluation steps are performed on distributed Spark DataFrames.
+
+The target variable is `loan_status`, which is converted into a binary label. Loans with status `Fully Paid` are assigned label `0`, while loans with status `Charged Off` are assigned label `1`. Other loan statuses, such as `Current`, `Late`, `Default`, and grace-period statuses, are excluded from the modeling dataset because they do not represent a clean finalized binary repayment outcome. After this filtering step, the modeling dataset contains only loans with known final outcomes.
+
+### Data Preparation for Machine Learning
+
+The Stage III pipeline starts from the curated Parquet data produced by the previous stages. The script `prepare_raw_ml_dataset.py` reads the distributed data from HDFS, restores temporal fields to Spark date types where necessary, derives time-based features, selects approval-time variables, and saves a prepared binary classification dataset to HDFS.
+
+The selected features include borrower income, loan amount, term, interest rate, installment, debt-to-income ratio, credit account statistics, FICO score range, employment length, home ownership, verification status, loan purpose, application type, grade, sub-grade, and temporal information. The modeling feature set is restricted to variables that are available at loan origination time. This avoids target leakage from post-origination fields such as recovery amounts, collection events, hardship information, settlement data, or late-payment history.
+
+The fields `issue_d` and `earliest_cr_line` are used to derive additional features for the model. From `issue_d`, the pipeline extracts both `issue_year` and `issue_month`. To reflect the cyclical relationship between months, `issue_month` is further encoded with sine and cosine transformations.
+
+`issue_month_sin = sin(2π × issue_month / 12)`
+
+`issue_month_cos = cos(2π × issue_month / 12)`
+
+In addition, the feature `credit_history_months` is calculated as the number of months between the loan issue date and the borrower’s earliest credit line. This preserves the temporal information in a model-friendly format.
+
+The script `build_train_test_datasets.py` performs the remaining preparation steps. First, the prepared dataset is split into training and test sets using a **70/30** ratio with a fixed random seed for reproducibility. Missing values are imputed using the mode computed **from the training split only**; the same imputation map is then applied to the test split. This prevents data leakage from the test set into preprocessing. Categorical variables are encoded with `StringIndexer` and `OneHotEncoder`, and all numeric and encoded categorical features are assembled into a single Spark ML feature vector using `VectorAssembler`.
+
+Since the classification task is imbalanced, the final training dataset is balanced after the train/test split using upsampling of the minority class. The test set is never balanced or modified, so all reported evaluation metrics are computed on the original, naturally imbalanced test distribution. The final encoded training dataset is saved to `ML_TRAIN_ENCODED_PATH`, and the unchanged encoded test dataset is saved to `ML_TEST_ENCODED_PATH`.
+
+The pipeline also produces dashboard-ready metadata artifacts. These include the split summary, feature list, and class distribution tables:
+
+- `split_summary.csv`
+- `feature_info.csv`
+- `label_distribution.csv`
+
+These files are later used in Apache Superset to display the number of data instances, number of features, feature names, and class balance at different stages of the pipeline.
+
+### Feature Engineering and Encoding
+
+The final feature vector contains **98 assembled features** after one-hot encoding categorical variables and combining them with numeric features. The original input feature groups are:
+
+- numeric financial and credit-history variables;
+- categorical borrower and loan attributes;
+- engineered datetime features.
+
+The categorical variables are indexed and one-hot encoded using a Spark ML pipeline. The numeric variables are passed directly into the `VectorAssembler`. The same fitted preprocessing pipeline is applied to both training and test data, ensuring consistent feature representation.
+
+The selected numeric features are:
+
+`loan_amnt`, `term`, `int_rate`, `installment`, `annual_inc`, `dti`, `delinq_2yrs`, `inq_last_6mths`, `open_acc`, `pub_rec`, `revol_bal`, `revol_util`, `total_acc`, `fico_range_low`, `fico_range_high`, `issue_year`, `issue_month`, `issue_month_sin`, `issue_month_cos`, and `credit_history_months`.
+
+The selected categorical features are:
+
+`grade`, `sub_grade`, `emp_length`, `home_ownership`, `verification_status`, `purpose`, and `application_type`.
+
+### Baseline Models
+
+Before hyperparameter tuning, three baseline models are trained to verify that the full pipeline works end-to-end and to establish reference performance. The baseline models are:
+
+1. **Random Forest Classifier**
+2. **Linear Support Vector Classifier**
+3. **Naive Bayes Classifier**
+
+All three models are trained on the encoded training dataset and evaluated on the encoded test dataset. For Naive Bayes, an additional `MinMaxScaler` transformation is applied before training because Spark’s Naive Bayes implementation requires non-negative input features, while the general feature vector contains cyclic sine/cosine features that may be negative.
+
+The baseline evaluation results are shown below.
+
+| Model | Accuracy | Precision | Recall | F1 | ROC-AUC | PR-AUC |
+|---|---:|---:|---:|---:|---:|---:|
+| Random Forest | 0.8023 | 0.6553 | 0.0155 | 0.0303 | 0.7135 | 0.3803 |
+| Linear SVC | 0.8009 | 0.0000 | 0.0000 | 0.0000 | 0.6026 | 0.2640 |
+| Naive Bayes | 0.7647 | 0.3906 | 0.3240 | 0.3542 | 0.4576 | 0.1847 |
+
+The baseline results show that accuracy alone is not reliable for this task because the dataset is imbalanced. For example, Linear SVC achieves around 80% accuracy while predicting only the majority class, resulting in zero precision, recall, and F1 for the positive class. Therefore, the main evaluation focus is placed on recall, F1, ROC-AUC, and especially PR-AUC, which is more informative for imbalanced binary classification.
+
+### Hyperparameter Tuning and Cross-Validation
+
+After baseline evaluation, the models are optimized using grid search with k-fold cross-validation. The tuning script `train_tuned_models.py` uses Spark ML’s `ParamGridBuilder` and `CrossValidator`. Cross-validation is performed only on the training dataset, and the test dataset is used only once for final evaluation of the selected best models. The optimization metric is `areaUnderPR`, because the positive class represents charged-off loans and the task is imbalanced.
+
+The value of `k` is set to 3.For each model, we tune three hyperparameters with three candidate values each, resulting in 27 grid-search combinations per model. With 3-fold cross-validation, each model family is evaluated over 81 training runs. The selected best model is then saved to HDFS, and its predictions on the test set are exported as a one-partition CSV file containing only `label` and `prediction`.
+
+For Random Forest, we tune `numTrees`, `maxDepth`, and `minInstancesPerNode`. These parameters control the complexity of the ensemble and the individual decision trees. `numTrees` defines how many trees are built, `maxDepth` limits how deep each tree can grow, and `minInstancesPerNode` prevents the model from creating overly small leaf nodes. This combination allows us to balance predictive power and overfitting risk while keeping the training process feasible on the YARN cluster.
+
+For Linear SVC, we tune `regParam`, `tol`, and `aggregationDepth`. The most important model-level parameter is `regParam`, which controls regularization strength and therefore the margin complexity. The `tol` parameter controls the convergence tolerance of the optimization procedure, while `aggregationDepth` affects the distributed tree aggregation strategy used during training. We do not tune `maxIter` because the project requirements specify that the number of iterations should not be counted as a model hyperparameter.
+
+For Naive Bayes, we tune three parameters: `smoothing`, `thresholds`, and the `max` value of the `MinMaxScaler` used in the model-specific preprocessing pipeline. The `smoothing` parameter controls additive smoothing and helps avoid zero-probability issues for rarely observed feature patterns. The `thresholds` parameter changes the decision bias between the two classes by assigning different weights to class predictions; this is especially useful for imbalanced binary classification, where the default decision threshold may favor the majority class. The scaler `max` parameter changes the upper bound of the transformed feature range, allowing us to test whether different feature scaling ranges affect the likelihood estimates and final classification behavior of the Naive Bayes model.
+
+The optimization metric for cross-validation is `areaUnderPR`. This metric is more informative than accuracy for our task because the positive class, `Charged Off`, is less frequent than the negative class. Optimizing PR-AUC encourages the models to improve ranking quality for risky loans rather than simply favoring the majority class.
+
+The tuned model artifacts are saved as:
+
+- `project/models/model1` — best Random Forest model;
+- `project/models/model2` — best Linear SVC model;
+- `project/models/model3` — best Naive Bayes model.
+
+The corresponding prediction outputs are saved as:
+
+- `project/output/model1_predictions`
+- `project/output/model2_predictions`
+- `project/output/model3_predictions`
+
+The final tuned model comparison is saved to:
+
+- `project/output/evaluation`
+
+### Tuned Model Results
+
+The tuned models are evaluated on the unchanged test dataset using accuracy, precision, recall, F1, ROC-AUC, PR-AUC, and confusion-matrix counts. The final evaluation results are shown below.
+
+| Model | Accuracy | Precision | Recall | F1 | ROC-AUC | PR-AUC |
+|---|---:|---:|---:|---:|---:|---:|
+| Random Forest | 0.6101 | 0.2991 | 0.7134 | 0.4215 | 0.7092 | 0.3696 |
+| Linear SVC | 0.6070 | 0.2939 | 0.6944 | 0.4130 | 0.6999 | 0.3574 |
+| Naive Bayes | 0.6174 | 0.2997 | 0.6892 | 0.4177 | 0.4583 | 0.1849 |
+
+The tuned models behave differently from the baselines. Random Forest and Linear SVC achieve much higher recall and F1 after tuning and balancing, meaning they identify a substantially larger share of charged-off loans. This comes at the cost of lower accuracy and precision because the models now classify more loans as risky. In the context of credit risk, this trade-off can be acceptable because missing a high-risk borrower may be more costly than flagging a safe borrower for additional review.
+
+Random Forest remains the strongest tuned model in terms of ROC-AUC and PR-AUC. Linear SVC performs close to Random Forest after tuning and is substantially improved compared to its baseline version, which collapsed to majority-class predictions. Naive Bayes achieves comparable recall and F1 but has much weaker ranking quality, as shown by its lower ROC-AUC and PR-AUC.
+
+### Model Comparison
+
+The final comparison is based primarily on PR-AUC and ROC-AUC, because these metrics evaluate ranking quality on an imbalanced binary classification task. F1 and recall are also considered because the business goal is to detect charged-off loans.
+
+Random Forest is selected as the best overall model because it achieves the highest tuned ROC-AUC and PR-AUC among the three models while maintaining high recall for the charged-off class. Linear SVC is a close second and may be attractive when a simpler linear decision boundary is preferred. Naive Bayes is the weakest model in terms of ranking performance, but it still provides a useful comparison point because it is computationally simple and represents a different modeling assumption.
+
+The confusion-style prediction distribution is exported to `prediction_distribution.csv`, which allows the dashboard to display true positives, true negatives, false positives, and false negatives for each tuned model.
+
+### Stage III Outputs
+
+The Stage III scripts produce both HDFS artifacts and local repository artifacts.
+
+The main HDFS outputs are:
+
+| Artifact | Description |
+|---|---|
+| `ML_PREPARED_RAW_PATH` | prepared binary classification dataset |
+| `ML_TRAIN_ENCODED_PATH` | balanced encoded training dataset |
+| `ML_TEST_ENCODED_PATH` | encoded test dataset |
+| `ML_TRAIN_JSON_PATH` | train dataset in JSON format |
+| `ML_TEST_JSON_PATH` | test dataset in JSON format |
+| `ML_MODEL1_PATH` | best Random Forest model |
+| `ML_MODEL2_PATH` | best Linear SVC model |
+| `ML_MODEL3_PATH` | best Naive Bayes model |
+| `ML_MODEL1_PRED_PATH` | Random Forest predictions |
+| `ML_MODEL2_PRED_PATH` | Linear SVC predictions |
+| `ML_MODEL3_PRED_PATH` | Naive Bayes predictions |
+| `ML_EVALUATION_PATH` | final tuned model comparison |
+| `ML_PREDICTION_DISTRIBUTION_PATH` | prediction distribution summary |
+
+The local dashboard-ready CSV files are exported to `output/dashboard/`:
+
+| File | Purpose |
+|---|---|
+| `split_summary.csv` | number of rows in train/test and number of features |
+| `feature_info.csv` | feature names and feature types |
+| `label_distribution.csv` | class distribution before and after split/balancing |
+| `baseline_evaluation.csv` | baseline model metrics |
+| `evaluation.csv` | tuned model metrics |
+| `prediction_distribution.csv` | confusion-style prediction distribution |
+
+These outputs are used by the Apache Superset dashboard to visualize dataset characteristics, class balance, baseline and tuned model performance, and prediction behavior.
+
+### Automation
+
+The complete Stage III workflow is automated by `scripts/stage3.sh`. The script loads environment variables from `.env`, runs all Spark jobs using `spark-submit --master yarn`, stores execution logs in the `logs/` directory, and exports the final HDFS artifacts into local repository folders:
+
+- `data/` for train/test JSON files;
+- `models/` for saved Spark ML models;
+- `output/` for evaluation and prediction CSV files;
+- `output/dashboard/` for Superset-ready dashboard tables.
+
+This ensures that the predictive analytics stage is reproducible and can be re-run end-to-end from a single command.
