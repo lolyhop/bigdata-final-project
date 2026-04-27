@@ -93,7 +93,7 @@ def build_label_distribution_df(df, dataset_name):
     return distribution_df
 
 
-def build_split_summary_df(
+def build_split_summary_df(  # pylint: disable=too-many-positional-arguments
     spark,
     train_raw_count,
     test_raw_count,
