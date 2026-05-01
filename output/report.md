@@ -240,11 +240,11 @@ The baseline evaluation results are shown below.
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC | PR-AUC |
 |---|---:|---:|---:|---:|---:|---:|
-| Random Forest | 0.8023 | 0.6553 | 0.0155 | 0.0303 | 0.7135 | 0.3803 |
-| Linear SVC | 0.8009 | 0.0000 | 0.0000 | 0.0000 | 0.6026 | 0.2640 |
-| Naive Bayes | 0.7647 | 0.3906 | 0.3240 | 0.3542 | 0.4576 | 0.1847 |
+| Random Forest | 0.5878 | 0.2881 | 0.7210 | 0.4117 | 0.6918 | 0.3448 |
+| Linear SVC | 0.5793 | 0.2852 | 0.7321 | 0.4105 | 0.6902 | 0.3503 |
+| Naive Bayes | 0.6167 | 0.2993 | 0.6830 | 0.4162 | 0.4594 | 0.1867 |
 
-The baseline results show that accuracy alone is not reliable for this task because the dataset is imbalanced. For example, Linear SVC achieves around 80% accuracy while predicting only the majority class, resulting in zero precision, recall, and F1 for the positive class. Therefore, the main evaluation focus is placed on recall, F1, ROC-AUC, and especially PR-AUC, which is more informative for imbalanced binary classification.
+The baseline results show that training on the balanced training split significantly increases recall for the positive class across all three models. This means that even baseline models are able to identify a much larger share of charged-off loans compared to the earlier unbalanced setup. However, this comes with lower accuracy and precision because the models produce more positive-class predictions. Therefore, accuracy alone remains insufficient for evaluating this task, and the main focus is placed on recall, F1, ROC-AUC, and PR-AUC.
 
 ### Hyperparameter Tuning and Cross-Validation
 
@@ -260,21 +260,21 @@ For Naive Bayes, we tune three parameters: `smoothing`, `thresholds`, and the `m
 
 The optimization metric for cross-validation is `areaUnderPR`. This metric is more informative than accuracy for our task because the positive class, `Charged Off`, is less frequent than the negative class. Optimizing PR-AUC encourages the models to improve ranking quality for risky loans rather than simply favoring the majority class.
 
-The tuned model artifacts are saved as:
+The tuned model artifacts are saved in HDFS as:
 
-- `project/models/model1` - best Random Forest model;
-- `project/models/model2` - best Linear SVC model;
-- `project/models/model3` - best Naive Bayes model.
+- `/user/team25/project/models/model1` — best Random Forest model
+- `/user/team25/project/models/model2` — best Linear SVC model
+- `/user/team25/project/models/model3` — best Naive Bayes model
 
-The corresponding prediction outputs are saved as:
+The corresponding prediction outputs are saved in HDFS as:
 
-- `project/output/model1_predictions`
-- `project/output/model2_predictions`
-- `project/output/model3_predictions`
+- `/user/team25/project/output/model1_predictions`
+- `/user/team25/project/output/model2_predictions`
+- `/user/team25/project/output/model3_predictions`
 
-The final tuned model comparison is saved to:
+The final tuned model comparison is saved in HDFS as:
 
-- `project/output/evaluation`
+- `/user/team25/project/output/evaluation`
 
 ### Tuned Model Results
 

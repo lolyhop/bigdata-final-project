@@ -2,22 +2,24 @@
 
 import os
 
-from pyspark.sql import SparkSession
+from dotenv import load_dotenv
 from pyspark.ml import Pipeline
-from pyspark.ml.classification import RandomForestClassifier, LinearSVC, NaiveBayes
-from pyspark.ml.feature import MinMaxScaler
+from pyspark.ml.classification import LinearSVC, NaiveBayes, RandomForestClassifier
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
-from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
+from pyspark.ml.feature import MinMaxScaler
+from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
+from pyspark.sql import SparkSession
 
 from ml_utils import (
-    evaluate_binary_predictions,
-    save_predictions,
-    param_map_to_string,
-    save_metrics_csv,
     build_prediction_distribution_df,
+    evaluate_binary_predictions,
+    param_map_to_string,
     pipeline_model_params_to_string,
+    save_metrics_csv,
+    save_predictions,
 )
 
+load_dotenv()
 ML_TRAIN_ENCODED_PATH = os.environ.get("ML_TRAIN_ENCODED_PATH")
 ML_TEST_ENCODED_PATH = os.environ.get("ML_TEST_ENCODED_PATH")
 

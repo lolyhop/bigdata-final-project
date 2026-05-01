@@ -2,13 +2,15 @@
 
 import os
 
-from pyspark.sql import SparkSession
+from dotenv import load_dotenv
 from pyspark.ml import Pipeline
+from pyspark.ml.classification import LinearSVC, NaiveBayes, RandomForestClassifier
 from pyspark.ml.feature import MinMaxScaler
-from pyspark.ml.classification import RandomForestClassifier, LinearSVC, NaiveBayes
+from pyspark.sql import SparkSession
 
-from ml_utils import evaluate_binary_predictions, save_predictions, save_metrics_csv
+from ml_utils import evaluate_binary_predictions, save_metrics_csv, save_predictions
 
+load_dotenv()
 ML_TRAIN_ENCODED_PATH = os.environ.get("ML_TRAIN_ENCODED_PATH")
 ML_TEST_ENCODED_PATH = os.environ.get("ML_TEST_ENCODED_PATH")
 

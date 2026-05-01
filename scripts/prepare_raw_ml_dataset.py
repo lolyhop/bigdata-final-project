@@ -3,10 +3,13 @@
 import math
 import os
 
+from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
+from ml_utils import read_hive
 
+load_dotenv()
 HDFS_DATA_DIR = os.environ.get("HDFS_DATA_DIR")
 ML_PREPARED_RAW_PATH = os.environ.get(
     "ML_PREPARED_RAW_PATH",
@@ -20,24 +23,10 @@ def build_spark():
         Active SparkSession.
     """
     return (
-        SparkSession.builder
-        .appName("team25 - prepare raw ml dataset")
+        SparkSession.builder.appName("team25 - prepare raw ml dataset")
         .master("yarn")
         .getOrCreate()
     )
-
-
-def read_source_dataset(spark):
-    """Read the raw Sqoop parquet from HDFS.
-
-    Args:
-        spark: Active SparkSession.
-
-    Returns:
-        Spark DataFrame containing the raw loans dataset.
-    """
-    print("Reading from:", HDFS_DATA_DIR)
-    return spark.read.parquet(HDFS_DATA_DIR)
 
 
 def restore_datetime_columns(df):
@@ -156,7 +145,7 @@ def main():
     """Orchestrate dataset preparation: restore dates, engineer features, save parquet."""
     spark = build_spark()
 
-    df = read_source_dataset(spark)
+    df = read_hive(spark, HDFS_DATA_DIR)
 
     print("\n=== SOURCE SCHEMA ===")
     df.printSchema()
