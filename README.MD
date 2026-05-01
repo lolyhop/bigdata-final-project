@@ -80,6 +80,7 @@ logs/       execution logs, if generated
 
 ## Pipeline Overview
 
+```text
 Raw CSV
   ↓
 Preprocessing
@@ -95,6 +96,7 @@ HiveQL EDA
 Spark ML on YARN
   ↓
 Superset dashboard outputs
+```
 
 The pipeline is designed to be reproducible. Each stage is implemented as a script and can be re-run independently. Intermediate outputs are overwritten or recreated when needed.
 
