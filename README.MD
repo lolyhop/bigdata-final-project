@@ -256,25 +256,27 @@ This stage registers Stage III CSV outputs as external Hive tables so that Apach
 
 **Main scripts:**
 
+```text
 scripts/stage4.sh  
 scripts/load_ml_hive_tables.py  
+```
 
 **Main Hive tables:**
 
-- ml_split_summary
-- ml_feature_info
-- ml_label_distribution
-- ml_baseline_evaluation
-- ml_evaluation
-- ml_prediction_distribution
+- `ml_split_summary`
+- `ml_feature_info`
+- `ml_label_distribution`
+- `ml_baseline_evaluation`
+- `ml_evaluation`
+- `ml_prediction_distribution`
 
 **Dashboard sections:**
 
-- data description
-- data quality and dataset characteristics
-- EDA business insights
-- ML model performance
-- prediction results
+- data description;
+- data quality and dataset characteristics;
+- EDA business insights;
+- ML model performance;
+- prediction results.
 
 ## Running the Full Pipeline
 
