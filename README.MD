@@ -1,14 +1,7 @@
 # Loan Default Prediction Using a Distributed Big Data Pipeline
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Course-Big%20Data%20IU-blue" />
-  <img src="https://img.shields.io/badge/Task-Binary%20Classification-purple" />
   <img src="https://img.shields.io/badge/Dataset-2.26M%20Loans-orange" />
-  <img src="https://img.shields.io/badge/Pipeline-End--to--End-green" />
-  <img src="https://img.shields.io/badge/Pylint-9.97%2F10-brightgreen" />
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/PostgreSQL-Citus-336791" />
   <img src="https://img.shields.io/badge/Sqoop-HDFS-yellow" />
   <img src="https://img.shields.io/badge/Hive-Tez-purple" />
