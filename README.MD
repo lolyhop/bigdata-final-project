@@ -1,12 +1,12 @@
 # Loan Default Prediction Using a Distributed Big Data Pipeline
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Dataset-2.26M%20Loans-orange" />
-  <img src="https://img.shields.io/badge/PostgreSQL-Citus-336791" />
-  <img src="https://img.shields.io/badge/Sqoop-HDFS-yellow" />
-  <img src="https://img.shields.io/badge/Hive-Tez-purple" />
-  <img src="https://img.shields.io/badge/Spark-MLlib-orange" />
-  <img src="https://img.shields.io/badge/Superset-Dashboard-20A6C9" />
+  <img src="https://img.shields.io/badge/Dataset-2.26M%20Loans-4DB6AC" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Citus-1976D2" />
+  <img src="https://img.shields.io/badge/Sqoop-HDFS-FFB74D" />
+  <img src="https://img.shields.io/badge/Hive-Tez-9575CD" />
+  <img src="https://img.shields.io/badge/Spark-MLlib-FF8A65" />
+  <img src="https://img.shields.io/badge/Superset-Dashboard-29B6F6" />
 </p>
 
 ## Navigation
