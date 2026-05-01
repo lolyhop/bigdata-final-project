@@ -33,7 +33,7 @@ for hql_path in sql/data_quality/*.hql; do
   output_file="${query_name}.csv"
 
   echo "  Data quality query ${query_name} ..."
-  python3 scripts/eda/run_hql_export.py \
+  python3 scripts/run_hql_export.py \
     --hql "data_quality/${hql_file}" \
     --table "$result_table" \
     --output "$output_file"
