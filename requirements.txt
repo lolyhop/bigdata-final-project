@@ -2,6 +2,7 @@ pylint
 pyspark
 pandas
 streamlit
+dotenv
 psycopg2-binary>=2.9
 typing_extensions>=3.7.4
 pyhive>=0.7.0,<0.8.0
