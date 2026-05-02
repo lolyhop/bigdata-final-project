@@ -3,86 +3,380 @@ DROP TABLE IF EXISTS dq_numeric_summary_results;
 CREATE TABLE dq_numeric_summary_results
 STORED AS ORC
 AS
+WITH summary AS (
+    SELECT
+        COUNT(*) AS total_rows,
+
+        COUNT(loan_amnt) AS loan_amnt_non_null_count,
+        SUM(CASE WHEN loan_amnt IS NULL THEN 1 ELSE 0 END) AS loan_amnt_null_count,
+        MIN(CAST(loan_amnt AS DOUBLE)) AS loan_amnt_min_value,
+        percentile_approx(CAST(loan_amnt AS DOUBLE), 0.25) AS loan_amnt_p25,
+        percentile_approx(CAST(loan_amnt AS DOUBLE), 0.50) AS loan_amnt_median,
+        percentile_approx(CAST(loan_amnt AS DOUBLE), 0.75) AS loan_amnt_p75,
+        percentile_approx(CAST(loan_amnt AS DOUBLE), 0.95) AS loan_amnt_p95,
+        MAX(CAST(loan_amnt AS DOUBLE)) AS loan_amnt_max_value,
+        AVG(CAST(loan_amnt AS DOUBLE)) AS loan_amnt_avg_value,
+        STDDEV(CAST(loan_amnt AS DOUBLE)) AS loan_amnt_stddev_value,
+
+        COUNT(term) AS term_non_null_count,
+        SUM(CASE WHEN term IS NULL THEN 1 ELSE 0 END) AS term_null_count,
+        MIN(CAST(term AS DOUBLE)) AS term_min_value,
+        percentile_approx(CAST(term AS DOUBLE), 0.25) AS term_p25,
+        percentile_approx(CAST(term AS DOUBLE), 0.50) AS term_median,
+        percentile_approx(CAST(term AS DOUBLE), 0.75) AS term_p75,
+        percentile_approx(CAST(term AS DOUBLE), 0.95) AS term_p95,
+        MAX(CAST(term AS DOUBLE)) AS term_max_value,
+        AVG(CAST(term AS DOUBLE)) AS term_avg_value,
+        STDDEV(CAST(term AS DOUBLE)) AS term_stddev_value,
+
+        COUNT(int_rate) AS int_rate_non_null_count,
+        SUM(CASE WHEN int_rate IS NULL THEN 1 ELSE 0 END) AS int_rate_null_count,
+        MIN(CAST(int_rate AS DOUBLE)) AS int_rate_min_value,
+        percentile_approx(CAST(int_rate AS DOUBLE), 0.25) AS int_rate_p25,
+        percentile_approx(CAST(int_rate AS DOUBLE), 0.50) AS int_rate_median,
+        percentile_approx(CAST(int_rate AS DOUBLE), 0.75) AS int_rate_p75,
+        percentile_approx(CAST(int_rate AS DOUBLE), 0.95) AS int_rate_p95,
+        MAX(CAST(int_rate AS DOUBLE)) AS int_rate_max_value,
+        AVG(CAST(int_rate AS DOUBLE)) AS int_rate_avg_value,
+        STDDEV(CAST(int_rate AS DOUBLE)) AS int_rate_stddev_value,
+
+        COUNT(installment) AS installment_non_null_count,
+        SUM(CASE WHEN installment IS NULL THEN 1 ELSE 0 END) AS installment_null_count,
+        MIN(CAST(installment AS DOUBLE)) AS installment_min_value,
+        percentile_approx(CAST(installment AS DOUBLE), 0.25) AS installment_p25,
+        percentile_approx(CAST(installment AS DOUBLE), 0.50) AS installment_median,
+        percentile_approx(CAST(installment AS DOUBLE), 0.75) AS installment_p75,
+        percentile_approx(CAST(installment AS DOUBLE), 0.95) AS installment_p95,
+        MAX(CAST(installment AS DOUBLE)) AS installment_max_value,
+        AVG(CAST(installment AS DOUBLE)) AS installment_avg_value,
+        STDDEV(CAST(installment AS DOUBLE)) AS installment_stddev_value,
+
+        COUNT(annual_inc) AS annual_inc_non_null_count,
+        SUM(CASE WHEN annual_inc IS NULL THEN 1 ELSE 0 END) AS annual_inc_null_count,
+        MIN(CAST(annual_inc AS DOUBLE)) AS annual_inc_min_value,
+        percentile_approx(CAST(annual_inc AS DOUBLE), 0.25) AS annual_inc_p25,
+        percentile_approx(CAST(annual_inc AS DOUBLE), 0.50) AS annual_inc_median,
+        percentile_approx(CAST(annual_inc AS DOUBLE), 0.75) AS annual_inc_p75,
+        percentile_approx(CAST(annual_inc AS DOUBLE), 0.95) AS annual_inc_p95,
+        MAX(CAST(annual_inc AS DOUBLE)) AS annual_inc_max_value,
+        AVG(CAST(annual_inc AS DOUBLE)) AS annual_inc_avg_value,
+        STDDEV(CAST(annual_inc AS DOUBLE)) AS annual_inc_stddev_value,
+
+        COUNT(dti) AS dti_non_null_count,
+        SUM(CASE WHEN dti IS NULL THEN 1 ELSE 0 END) AS dti_null_count,
+        MIN(CAST(dti AS DOUBLE)) AS dti_min_value,
+        percentile_approx(CAST(dti AS DOUBLE), 0.25) AS dti_p25,
+        percentile_approx(CAST(dti AS DOUBLE), 0.50) AS dti_median,
+        percentile_approx(CAST(dti AS DOUBLE), 0.75) AS dti_p75,
+        percentile_approx(CAST(dti AS DOUBLE), 0.95) AS dti_p95,
+        MAX(CAST(dti AS DOUBLE)) AS dti_max_value,
+        AVG(CAST(dti AS DOUBLE)) AS dti_avg_value,
+        STDDEV(CAST(dti AS DOUBLE)) AS dti_stddev_value,
+
+        COUNT(delinq_2yrs) AS delinq_2yrs_non_null_count,
+        SUM(CASE WHEN delinq_2yrs IS NULL THEN 1 ELSE 0 END) AS delinq_2yrs_null_count,
+        MIN(CAST(delinq_2yrs AS DOUBLE)) AS delinq_2yrs_min_value,
+        percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.25) AS delinq_2yrs_p25,
+        percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.50) AS delinq_2yrs_median,
+        percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.75) AS delinq_2yrs_p75,
+        percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.95) AS delinq_2yrs_p95,
+        MAX(CAST(delinq_2yrs AS DOUBLE)) AS delinq_2yrs_max_value,
+        AVG(CAST(delinq_2yrs AS DOUBLE)) AS delinq_2yrs_avg_value,
+        STDDEV(CAST(delinq_2yrs AS DOUBLE)) AS delinq_2yrs_stddev_value,
+
+        COUNT(inq_last_6mths) AS inq_last_6mths_non_null_count,
+        SUM(CASE WHEN inq_last_6mths IS NULL THEN 1 ELSE 0 END) AS inq_last_6mths_null_count,
+        MIN(CAST(inq_last_6mths AS DOUBLE)) AS inq_last_6mths_min_value,
+        percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.25) AS inq_last_6mths_p25,
+        percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.50) AS inq_last_6mths_median,
+        percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.75) AS inq_last_6mths_p75,
+        percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.95) AS inq_last_6mths_p95,
+        MAX(CAST(inq_last_6mths AS DOUBLE)) AS inq_last_6mths_max_value,
+        AVG(CAST(inq_last_6mths AS DOUBLE)) AS inq_last_6mths_avg_value,
+        STDDEV(CAST(inq_last_6mths AS DOUBLE)) AS inq_last_6mths_stddev_value,
+
+        COUNT(open_acc) AS open_acc_non_null_count,
+        SUM(CASE WHEN open_acc IS NULL THEN 1 ELSE 0 END) AS open_acc_null_count,
+        MIN(CAST(open_acc AS DOUBLE)) AS open_acc_min_value,
+        percentile_approx(CAST(open_acc AS DOUBLE), 0.25) AS open_acc_p25,
+        percentile_approx(CAST(open_acc AS DOUBLE), 0.50) AS open_acc_median,
+        percentile_approx(CAST(open_acc AS DOUBLE), 0.75) AS open_acc_p75,
+        percentile_approx(CAST(open_acc AS DOUBLE), 0.95) AS open_acc_p95,
+        MAX(CAST(open_acc AS DOUBLE)) AS open_acc_max_value,
+        AVG(CAST(open_acc AS DOUBLE)) AS open_acc_avg_value,
+        STDDEV(CAST(open_acc AS DOUBLE)) AS open_acc_stddev_value,
+
+        COUNT(pub_rec) AS pub_rec_non_null_count,
+        SUM(CASE WHEN pub_rec IS NULL THEN 1 ELSE 0 END) AS pub_rec_null_count,
+        MIN(CAST(pub_rec AS DOUBLE)) AS pub_rec_min_value,
+        percentile_approx(CAST(pub_rec AS DOUBLE), 0.25) AS pub_rec_p25,
+        percentile_approx(CAST(pub_rec AS DOUBLE), 0.50) AS pub_rec_median,
+        percentile_approx(CAST(pub_rec AS DOUBLE), 0.75) AS pub_rec_p75,
+        percentile_approx(CAST(pub_rec AS DOUBLE), 0.95) AS pub_rec_p95,
+        MAX(CAST(pub_rec AS DOUBLE)) AS pub_rec_max_value,
+        AVG(CAST(pub_rec AS DOUBLE)) AS pub_rec_avg_value,
+        STDDEV(CAST(pub_rec AS DOUBLE)) AS pub_rec_stddev_value,
+
+        COUNT(revol_bal) AS revol_bal_non_null_count,
+        SUM(CASE WHEN revol_bal IS NULL THEN 1 ELSE 0 END) AS revol_bal_null_count,
+        MIN(CAST(revol_bal AS DOUBLE)) AS revol_bal_min_value,
+        percentile_approx(CAST(revol_bal AS DOUBLE), 0.25) AS revol_bal_p25,
+        percentile_approx(CAST(revol_bal AS DOUBLE), 0.50) AS revol_bal_median,
+        percentile_approx(CAST(revol_bal AS DOUBLE), 0.75) AS revol_bal_p75,
+        percentile_approx(CAST(revol_bal AS DOUBLE), 0.95) AS revol_bal_p95,
+        MAX(CAST(revol_bal AS DOUBLE)) AS revol_bal_max_value,
+        AVG(CAST(revol_bal AS DOUBLE)) AS revol_bal_avg_value,
+        STDDEV(CAST(revol_bal AS DOUBLE)) AS revol_bal_stddev_value,
+
+        COUNT(revol_util) AS revol_util_non_null_count,
+        SUM(CASE WHEN revol_util IS NULL THEN 1 ELSE 0 END) AS revol_util_null_count,
+        MIN(CAST(revol_util AS DOUBLE)) AS revol_util_min_value,
+        percentile_approx(CAST(revol_util AS DOUBLE), 0.25) AS revol_util_p25,
+        percentile_approx(CAST(revol_util AS DOUBLE), 0.50) AS revol_util_median,
+        percentile_approx(CAST(revol_util AS DOUBLE), 0.75) AS revol_util_p75,
+        percentile_approx(CAST(revol_util AS DOUBLE), 0.95) AS revol_util_p95,
+        MAX(CAST(revol_util AS DOUBLE)) AS revol_util_max_value,
+        AVG(CAST(revol_util AS DOUBLE)) AS revol_util_avg_value,
+        STDDEV(CAST(revol_util AS DOUBLE)) AS revol_util_stddev_value,
+
+        COUNT(total_acc) AS total_acc_non_null_count,
+        SUM(CASE WHEN total_acc IS NULL THEN 1 ELSE 0 END) AS total_acc_null_count,
+        MIN(CAST(total_acc AS DOUBLE)) AS total_acc_min_value,
+        percentile_approx(CAST(total_acc AS DOUBLE), 0.25) AS total_acc_p25,
+        percentile_approx(CAST(total_acc AS DOUBLE), 0.50) AS total_acc_median,
+        percentile_approx(CAST(total_acc AS DOUBLE), 0.75) AS total_acc_p75,
+        percentile_approx(CAST(total_acc AS DOUBLE), 0.95) AS total_acc_p95,
+        MAX(CAST(total_acc AS DOUBLE)) AS total_acc_max_value,
+        AVG(CAST(total_acc AS DOUBLE)) AS total_acc_avg_value,
+        STDDEV(CAST(total_acc AS DOUBLE)) AS total_acc_stddev_value,
+
+        COUNT(fico_range_low) AS fico_range_low_non_null_count,
+        SUM(CASE WHEN fico_range_low IS NULL THEN 1 ELSE 0 END) AS fico_range_low_null_count,
+        MIN(CAST(fico_range_low AS DOUBLE)) AS fico_range_low_min_value,
+        percentile_approx(CAST(fico_range_low AS DOUBLE), 0.25) AS fico_range_low_p25,
+        percentile_approx(CAST(fico_range_low AS DOUBLE), 0.50) AS fico_range_low_median,
+        percentile_approx(CAST(fico_range_low AS DOUBLE), 0.75) AS fico_range_low_p75,
+        percentile_approx(CAST(fico_range_low AS DOUBLE), 0.95) AS fico_range_low_p95,
+        MAX(CAST(fico_range_low AS DOUBLE)) AS fico_range_low_max_value,
+        AVG(CAST(fico_range_low AS DOUBLE)) AS fico_range_low_avg_value,
+        STDDEV(CAST(fico_range_low AS DOUBLE)) AS fico_range_low_stddev_value,
+
+        COUNT(fico_range_high) AS fico_range_high_non_null_count,
+        SUM(CASE WHEN fico_range_high IS NULL THEN 1 ELSE 0 END) AS fico_range_high_null_count,
+        MIN(CAST(fico_range_high AS DOUBLE)) AS fico_range_high_min_value,
+        percentile_approx(CAST(fico_range_high AS DOUBLE), 0.25) AS fico_range_high_p25,
+        percentile_approx(CAST(fico_range_high AS DOUBLE), 0.50) AS fico_range_high_median,
+        percentile_approx(CAST(fico_range_high AS DOUBLE), 0.75) AS fico_range_high_p75,
+        percentile_approx(CAST(fico_range_high AS DOUBLE), 0.95) AS fico_range_high_p95,
+        MAX(CAST(fico_range_high AS DOUBLE)) AS fico_range_high_max_value,
+        AVG(CAST(fico_range_high AS DOUBLE)) AS fico_range_high_avg_value,
+        STDDEV(CAST(fico_range_high AS DOUBLE)) AS fico_range_high_stddev_value
+    FROM loans
+)
 SELECT
-    'loan_amnt' AS feature,
-    COUNT(loan_amnt) AS non_null_count,
-    SUM(CASE WHEN loan_amnt IS NULL THEN 1 ELSE 0 END) AS null_count,
-    MIN(CAST(loan_amnt AS DOUBLE)) AS min_value,
-    percentile_approx(CAST(loan_amnt AS DOUBLE), 0.25) AS p25,
-    percentile_approx(CAST(loan_amnt AS DOUBLE), 0.50) AS median,
-    percentile_approx(CAST(loan_amnt AS DOUBLE), 0.75) AS p75,
-    percentile_approx(CAST(loan_amnt AS DOUBLE), 0.95) AS p95,
-    MAX(CAST(loan_amnt AS DOUBLE)) AS max_value,
-    AVG(CAST(loan_amnt AS DOUBLE)) AS avg_value,
-    STDDEV(CAST(loan_amnt AS DOUBLE)) AS stddev_value
-FROM team25_projectdb.loans
+    feature,
+    CAST(non_null_count AS BIGINT) AS non_null_count,
+    CAST(null_count AS BIGINT) AS null_count,
+    CAST(min_value AS DOUBLE) AS min_value,
+    CAST(p25 AS DOUBLE) AS p25,
+    CAST(median AS DOUBLE) AS median,
+    CAST(p75 AS DOUBLE) AS p75,
+    CAST(p95 AS DOUBLE) AS p95,
+    CAST(max_value AS DOUBLE) AS max_value,
+    CAST(avg_value AS DOUBLE) AS avg_value,
+    CAST(stddev_value AS DOUBLE) AS stddev_value
+FROM summary
+LATERAL VIEW STACK(
+    15,
 
-UNION ALL
+    'loan_amnt',
+    loan_amnt_non_null_count,
+    loan_amnt_null_count,
+    loan_amnt_min_value,
+    loan_amnt_p25,
+    loan_amnt_median,
+    loan_amnt_p75,
+    loan_amnt_p95,
+    loan_amnt_max_value,
+    loan_amnt_avg_value,
+    loan_amnt_stddev_value,
 
-SELECT 'term', COUNT(term), SUM(CASE WHEN term IS NULL THEN 1 ELSE 0 END), MIN(CAST(term AS DOUBLE)), percentile_approx(CAST(term AS DOUBLE), 0.25), percentile_approx(CAST(term AS DOUBLE), 0.50), percentile_approx(CAST(term AS DOUBLE), 0.75), percentile_approx(CAST(term AS DOUBLE), 0.95), MAX(CAST(term AS DOUBLE)), AVG(CAST(term AS DOUBLE)), STDDEV(CAST(term AS DOUBLE))
-FROM team25_projectdb.loans
+    'term',
+    term_non_null_count,
+    term_null_count,
+    term_min_value,
+    term_p25,
+    term_median,
+    term_p75,
+    term_p95,
+    term_max_value,
+    term_avg_value,
+    term_stddev_value,
 
-UNION ALL
+    'int_rate',
+    int_rate_non_null_count,
+    int_rate_null_count,
+    int_rate_min_value,
+    int_rate_p25,
+    int_rate_median,
+    int_rate_p75,
+    int_rate_p95,
+    int_rate_max_value,
+    int_rate_avg_value,
+    int_rate_stddev_value,
 
-SELECT 'int_rate', COUNT(int_rate), SUM(CASE WHEN int_rate IS NULL THEN 1 ELSE 0 END), MIN(CAST(int_rate AS DOUBLE)), percentile_approx(CAST(int_rate AS DOUBLE), 0.25), percentile_approx(CAST(int_rate AS DOUBLE), 0.50), percentile_approx(CAST(int_rate AS DOUBLE), 0.75), percentile_approx(CAST(int_rate AS DOUBLE), 0.95), MAX(CAST(int_rate AS DOUBLE)), AVG(CAST(int_rate AS DOUBLE)), STDDEV(CAST(int_rate AS DOUBLE))
-FROM team25_projectdb.loans
+    'installment',
+    installment_non_null_count,
+    installment_null_count,
+    installment_min_value,
+    installment_p25,
+    installment_median,
+    installment_p75,
+    installment_p95,
+    installment_max_value,
+    installment_avg_value,
+    installment_stddev_value,
 
-UNION ALL
+    'annual_inc',
+    annual_inc_non_null_count,
+    annual_inc_null_count,
+    annual_inc_min_value,
+    annual_inc_p25,
+    annual_inc_median,
+    annual_inc_p75,
+    annual_inc_p95,
+    annual_inc_max_value,
+    annual_inc_avg_value,
+    annual_inc_stddev_value,
 
-SELECT 'installment', COUNT(installment), SUM(CASE WHEN installment IS NULL THEN 1 ELSE 0 END), MIN(CAST(installment AS DOUBLE)), percentile_approx(CAST(installment AS DOUBLE), 0.25), percentile_approx(CAST(installment AS DOUBLE), 0.50), percentile_approx(CAST(installment AS DOUBLE), 0.75), percentile_approx(CAST(installment AS DOUBLE), 0.95), MAX(CAST(installment AS DOUBLE)), AVG(CAST(installment AS DOUBLE)), STDDEV(CAST(installment AS DOUBLE))
-FROM team25_projectdb.loans
+    'dti',
+    dti_non_null_count,
+    dti_null_count,
+    dti_min_value,
+    dti_p25,
+    dti_median,
+    dti_p75,
+    dti_p95,
+    dti_max_value,
+    dti_avg_value,
+    dti_stddev_value,
 
-UNION ALL
+    'delinq_2yrs',
+    delinq_2yrs_non_null_count,
+    delinq_2yrs_null_count,
+    delinq_2yrs_min_value,
+    delinq_2yrs_p25,
+    delinq_2yrs_median,
+    delinq_2yrs_p75,
+    delinq_2yrs_p95,
+    delinq_2yrs_max_value,
+    delinq_2yrs_avg_value,
+    delinq_2yrs_stddev_value,
 
-SELECT 'annual_inc', COUNT(annual_inc), SUM(CASE WHEN annual_inc IS NULL THEN 1 ELSE 0 END), MIN(CAST(annual_inc AS DOUBLE)), percentile_approx(CAST(annual_inc AS DOUBLE), 0.25), percentile_approx(CAST(annual_inc AS DOUBLE), 0.50), percentile_approx(CAST(annual_inc AS DOUBLE), 0.75), percentile_approx(CAST(annual_inc AS DOUBLE), 0.95), MAX(CAST(annual_inc AS DOUBLE)), AVG(CAST(annual_inc AS DOUBLE)), STDDEV(CAST(annual_inc AS DOUBLE))
-FROM team25_projectdb.loans
+    'inq_last_6mths',
+    inq_last_6mths_non_null_count,
+    inq_last_6mths_null_count,
+    inq_last_6mths_min_value,
+    inq_last_6mths_p25,
+    inq_last_6mths_median,
+    inq_last_6mths_p75,
+    inq_last_6mths_p95,
+    inq_last_6mths_max_value,
+    inq_last_6mths_avg_value,
+    inq_last_6mths_stddev_value,
 
-UNION ALL
+    'open_acc',
+    open_acc_non_null_count,
+    open_acc_null_count,
+    open_acc_min_value,
+    open_acc_p25,
+    open_acc_median,
+    open_acc_p75,
+    open_acc_p95,
+    open_acc_max_value,
+    open_acc_avg_value,
+    open_acc_stddev_value,
 
-SELECT 'dti', COUNT(dti), SUM(CASE WHEN dti IS NULL THEN 1 ELSE 0 END), MIN(CAST(dti AS DOUBLE)), percentile_approx(CAST(dti AS DOUBLE), 0.25), percentile_approx(CAST(dti AS DOUBLE), 0.50), percentile_approx(CAST(dti AS DOUBLE), 0.75), percentile_approx(CAST(dti AS DOUBLE), 0.95), MAX(CAST(dti AS DOUBLE)), AVG(CAST(dti AS DOUBLE)), STDDEV(CAST(dti AS DOUBLE))
-FROM team25_projectdb.loans
+    'pub_rec',
+    pub_rec_non_null_count,
+    pub_rec_null_count,
+    pub_rec_min_value,
+    pub_rec_p25,
+    pub_rec_median,
+    pub_rec_p75,
+    pub_rec_p95,
+    pub_rec_max_value,
+    pub_rec_avg_value,
+    pub_rec_stddev_value,
 
-UNION ALL
+    'revol_bal',
+    revol_bal_non_null_count,
+    revol_bal_null_count,
+    revol_bal_min_value,
+    revol_bal_p25,
+    revol_bal_median,
+    revol_bal_p75,
+    revol_bal_p95,
+    revol_bal_max_value,
+    revol_bal_avg_value,
+    revol_bal_stddev_value,
 
-SELECT 'delinq_2yrs', COUNT(delinq_2yrs), SUM(CASE WHEN delinq_2yrs IS NULL THEN 1 ELSE 0 END), MIN(CAST(delinq_2yrs AS DOUBLE)), percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.25), percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.50), percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.75), percentile_approx(CAST(delinq_2yrs AS DOUBLE), 0.95), MAX(CAST(delinq_2yrs AS DOUBLE)), AVG(CAST(delinq_2yrs AS DOUBLE)), STDDEV(CAST(delinq_2yrs AS DOUBLE))
-FROM team25_projectdb.loans
+    'revol_util',
+    revol_util_non_null_count,
+    revol_util_null_count,
+    revol_util_min_value,
+    revol_util_p25,
+    revol_util_median,
+    revol_util_p75,
+    revol_util_p95,
+    revol_util_max_value,
+    revol_util_avg_value,
+    revol_util_stddev_value,
 
-UNION ALL
+    'total_acc',
+    total_acc_non_null_count,
+    total_acc_null_count,
+    total_acc_min_value,
+    total_acc_p25,
+    total_acc_median,
+    total_acc_p75,
+    total_acc_p95,
+    total_acc_max_value,
+    total_acc_avg_value,
+    total_acc_stddev_value,
 
-SELECT 'inq_last_6mths', COUNT(inq_last_6mths), SUM(CASE WHEN inq_last_6mths IS NULL THEN 1 ELSE 0 END), MIN(CAST(inq_last_6mths AS DOUBLE)), percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.25), percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.50), percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.75), percentile_approx(CAST(inq_last_6mths AS DOUBLE), 0.95), MAX(CAST(inq_last_6mths AS DOUBLE)), AVG(CAST(inq_last_6mths AS DOUBLE)), STDDEV(CAST(inq_last_6mths AS DOUBLE))
-FROM team25_projectdb.loans
+    'fico_range_low',
+    fico_range_low_non_null_count,
+    fico_range_low_null_count,
+    fico_range_low_min_value,
+    fico_range_low_p25,
+    fico_range_low_median,
+    fico_range_low_p75,
+    fico_range_low_p95,
+    fico_range_low_max_value,
+    fico_range_low_avg_value,
+    fico_range_low_stddev_value,
 
-UNION ALL
-
-SELECT 'open_acc', COUNT(open_acc), SUM(CASE WHEN open_acc IS NULL THEN 1 ELSE 0 END), MIN(CAST(open_acc AS DOUBLE)), percentile_approx(CAST(open_acc AS DOUBLE), 0.25), percentile_approx(CAST(open_acc AS DOUBLE), 0.50), percentile_approx(CAST(open_acc AS DOUBLE), 0.75), percentile_approx(CAST(open_acc AS DOUBLE), 0.95), MAX(CAST(open_acc AS DOUBLE)), AVG(CAST(open_acc AS DOUBLE)), STDDEV(CAST(open_acc AS DOUBLE))
-FROM team25_projectdb.loans
-
-UNION ALL
-
-SELECT 'pub_rec', COUNT(pub_rec), SUM(CASE WHEN pub_rec IS NULL THEN 1 ELSE 0 END), MIN(CAST(pub_rec AS DOUBLE)), percentile_approx(CAST(pub_rec AS DOUBLE), 0.25), percentile_approx(CAST(pub_rec AS DOUBLE), 0.50), percentile_approx(CAST(pub_rec AS DOUBLE), 0.75), percentile_approx(CAST(pub_rec AS DOUBLE), 0.95), MAX(CAST(pub_rec AS DOUBLE)), AVG(CAST(pub_rec AS DOUBLE)), STDDEV(CAST(pub_rec AS DOUBLE))
-FROM team25_projectdb.loans
-
-UNION ALL
-
-SELECT 'revol_bal', COUNT(revol_bal), SUM(CASE WHEN revol_bal IS NULL THEN 1 ELSE 0 END), MIN(CAST(revol_bal AS DOUBLE)), percentile_approx(CAST(revol_bal AS DOUBLE), 0.25), percentile_approx(CAST(revol_bal AS DOUBLE), 0.50), percentile_approx(CAST(revol_bal AS DOUBLE), 0.75), percentile_approx(CAST(revol_bal AS DOUBLE), 0.95), MAX(CAST(revol_bal AS DOUBLE)), AVG(CAST(revol_bal AS DOUBLE)), STDDEV(CAST(revol_bal AS DOUBLE))
-FROM team25_projectdb.loans
-
-UNION ALL
-
-SELECT 'revol_util', COUNT(revol_util), SUM(CASE WHEN revol_util IS NULL THEN 1 ELSE 0 END), MIN(CAST(revol_util AS DOUBLE)), percentile_approx(CAST(revol_util AS DOUBLE), 0.25), percentile_approx(CAST(revol_util AS DOUBLE), 0.50), percentile_approx(CAST(revol_util AS DOUBLE), 0.75), percentile_approx(CAST(revol_util AS DOUBLE), 0.95), MAX(CAST(revol_util AS DOUBLE)), AVG(CAST(revol_util AS DOUBLE)), STDDEV(CAST(revol_util AS DOUBLE))
-FROM team25_projectdb.loans
-
-UNION ALL
-
-SELECT 'total_acc', COUNT(total_acc), SUM(CASE WHEN total_acc IS NULL THEN 1 ELSE 0 END), MIN(CAST(total_acc AS DOUBLE)), percentile_approx(CAST(total_acc AS DOUBLE), 0.25), percentile_approx(CAST(total_acc AS DOUBLE), 0.50), percentile_approx(CAST(total_acc AS DOUBLE), 0.75), percentile_approx(CAST(total_acc AS DOUBLE), 0.95), MAX(CAST(total_acc AS DOUBLE)), AVG(CAST(total_acc AS DOUBLE)), STDDEV(CAST(total_acc AS DOUBLE))
-FROM team25_projectdb.loans
-
-UNION ALL
-
-SELECT 'fico_range_low', COUNT(fico_range_low), SUM(CASE WHEN fico_range_low IS NULL THEN 1 ELSE 0 END), MIN(CAST(fico_range_low AS DOUBLE)), percentile_approx(CAST(fico_range_low AS DOUBLE), 0.25), percentile_approx(CAST(fico_range_low AS DOUBLE), 0.50), percentile_approx(CAST(fico_range_low AS DOUBLE), 0.75), percentile_approx(CAST(fico_range_low AS DOUBLE), 0.95), MAX(CAST(fico_range_low AS DOUBLE)), AVG(CAST(fico_range_low AS DOUBLE)), STDDEV(CAST(fico_range_low AS DOUBLE))
-FROM team25_projectdb.loans
-
-UNION ALL
-
-SELECT 'fico_range_high', COUNT(fico_range_high), SUM(CASE WHEN fico_range_high IS NULL THEN 1 ELSE 0 END), MIN(CAST(fico_range_high AS DOUBLE)), percentile_approx(CAST(fico_range_high AS DOUBLE), 0.25), percentile_approx(CAST(fico_range_high AS DOUBLE), 0.50), percentile_approx(CAST(fico_range_high AS DOUBLE), 0.75), percentile_approx(CAST(fico_range_high AS DOUBLE), 0.95), MAX(CAST(fico_range_high AS DOUBLE)), AVG(CAST(fico_range_high AS DOUBLE)), STDDEV(CAST(fico_range_high AS DOUBLE))
-FROM team25_projectdb.loans;
+    'fico_range_high',
+    fico_range_high_non_null_count,
+    fico_range_high_null_count,
+    fico_range_high_min_value,
+    fico_range_high_p25,
+    fico_range_high_median,
+    fico_range_high_p75,
+    fico_range_high_p95,
+    fico_range_high_max_value,
+    fico_range_high_avg_value,
+    fico_range_high_stddev_value
+) stacked AS
+    feature,
+    non_null_count,
+    null_count,
+    min_value,
+    p25,
+    median,
+    p75,
+    p95,
+    max_value,
+    avg_value,
+    stddev_value;
