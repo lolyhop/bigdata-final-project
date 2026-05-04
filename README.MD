@@ -17,12 +17,12 @@
 - [Repository Structure](#repository-structure)
 - [Pipeline Overview](#pipeline-overview)
 - [Pipeline Stages](#pipeline-stages)
-- [Stage I — Data Collection and Ingestion](#stage-i--data-collection-and-ingestion)
-- [Stage II — Hive Storage and EDA](#stage-ii--hive-storage-and-eda)
+-[Stage I — Data Collection and Ingestion](#stage-i--data-collection-and-ingestion)
+-[Stage II — Hive Storage and EDA](#stage-ii--hive-storage-and-eda)
 - [Stage III — Predictive Data Analytics](#stage-iii--predictive-data-analytics)
 - [Stage IV — Dashboard Preparation](#stage-iv--dashboard-preparation)
 - [Running the Full Pipeline](#running-the-full-pipeline)
-- [Running Individual Stages](#running-individual-stages)
+-[Running Individual Stages](#running-individual-stages)
 - [Key Outputs](#key-outputs)
 - [Code Quality](#code-quality)
 
@@ -185,7 +185,7 @@ output/dq_numeric_distributions.csv
 
 ### Stage III — Predictive Data Analytics
 
-This stage prepares the binary classification dataset and trains Spark ML models on YARN. It performs feature engineering, train/test splitting, missing value imputation, categorical encoding, train balancing, baseline training, hyperparameter tuning with grid search and 3-fold cross-validation, and model evaluation.
+This stage prepares the binary classification dataset and trains Spark ML models on YARN. It performs feature engineering, train/test splitting, missing value imputation, categorical encoding, train balancing, baseline training, hyperparameter tuning with grid search and cross-validation, and model evaluation.
 
 **Main steps:**
 
@@ -199,7 +199,7 @@ This stage prepares the binary classification dataset and trains Spark ML models
 - balance only the training split;
 - keep the test split unchanged;
 - train baseline models;
-- tune models with grid search and 3-fold cross-validation;
+- tune models with grid search and cross-validation;
 - export metrics, predictions, and trained models.
 
 **Models:**
