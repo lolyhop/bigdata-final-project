@@ -36,11 +36,11 @@ This project addresses three business objectives that are important for real-wor
 
 The first objective is to identify risky loan applications before a loan is issued. If a lender can estimate default risk at the approval stage, it can make safer decisions, apply stricter verification to suspicious applications, or adjust loan terms. This objective is supported by the[Office of the Comptroller of the Currency (OCC)](https://www.occ.treas.gov/news-issuances/congressional-testimony/2011/pub-test-2011-92-written.pdf), a U.S. regulator that supervises national banks. The OCC explains that credit risk is one of the most important risks for banks and notes that loan losses have historically been a major reason for bank failures. 
 
-1. **Make underwriting decisions more consistent and transparent.**
+2. **Make underwriting decisions more consistent and transparent.**
 
 The second objective is to reduce reliance on ad hoc human judgment and make approval decisions more standardized. A data-driven model helps evaluate all applicants using the same criteria, which makes the process easier to scale and justify. This idea is directly supported by the [World Bank Credit Scoring Approaches Guidelines](https://thedocs.worldbank.org/en/doc/935891585869698451-0130022020/original/CREDITSCORINGAPPROACHESGUIDELINESFINALWEB.pdf), where credit scoring is described as a quick, consistent, and effective way to decide whether an applicant is eligible for a loan. 
 
-1. **Provide clear portfolio-level analytics for stakeholders.**
+3. **Provide clear portfolio-level analytics for stakeholders.**
 
 The third objective is to help managers and analysts understand overall portfolio quality, default patterns, and changes over time. In practice, this means building a reproducible pipeline that produces reliable metrics and dashboard-ready outputs. This idea is consistent with the principles of the[Basel Committee on Banking Supervision (BCBS 239)](https://www.bis.org/publ/bcbs239.pdf), which emphasize that financial institutions should have accurate risk data and clear internal risk reporting to support better decision-making.
 
