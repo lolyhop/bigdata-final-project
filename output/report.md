@@ -267,6 +267,27 @@ erDiagram
 ```
 
 
+---
+
+## Sample Data
+
+The following rows were retrieved directly from the `loans` PostgreSQL table using the query below. They illustrate the value formats and ranges for the 12 most representative columns after preprocessing.
+
+```sql
+SELECT
+    id, loan_amnt, term, int_rate, grade, home_ownership,
+    annual_inc, dti, fico_range_low, purpose, loan_status, issue_d
+FROM loans
+LIMIT 5;
+```
+
+| id | loan\_amnt | term | int\_rate | grade | home\_ownership | annual\_inc | dti | fico\_range\_low | purpose | loan\_status | issue\_d |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 68407277 | 3,600 | 36 | 13.99 | C | MORTGAGE | 55,000 | 5.91 | 675 | debt\_consolidation | Fully Paid | 2015-12-01 |
+| 68355089 | 24,700 | 36 | 11.99 | C | MORTGAGE | 65,000 | 16.06 | 715 | small\_business | Fully Paid | 2015-12-01 |
+| 68341763 | 20,000 | 60 | 10.78 | B | MORTGAGE | 63,000 | 10.78 | 695 | home\_improvement | Fully Paid | 2015-12-01 |
+| 66310712 | 35,000 | 60 | 14.85 | C | MORTGAGE | 110,000 | 17.06 | 785 | debt\_consolidation | Current | 2015-12-01 |
+| 68476807 | 10,400 | 60 | 22.45 | F | MORTGAGE | 104,433 | 25.37 | 695 | major\_purchase | Fully Paid | 2015-12-01 |
 
 ---
 
@@ -656,6 +677,20 @@ This section presents the per-model prediction behavior on the test set:
 - **Confusion matrix heatmap - Random Forest** - predicted class on the x-axis, true class on the y-axis, cell brightness proportional to count.
 - **Confusion matrix heatmap - Linear SVC** - same layout as above.
 - **Confusion matrix heatmap - Naive Bayes** - same layout as above.
+
+### Key Findings
+
+The dashboard brings together the EDA and ML results into a coherent narrative for business stakeholders. Several findings stand out across the analysis.
+
+**Credit grade is the dominant risk signal.** Default rate rises monotonically from 6% at grade A to 50% at grade G, and average interest rate tracks this gradient almost exactly. This confirms that Lending Club's grading model captures credit risk accurately, and it makes `grade` the single most informative feature available at origination time.
+
+**DTI and FICO score provide strong continuous signals.** Each 10-point increment in DTI adds roughly 4–5 percentage points to the default rate, from 15% at DTI 0–10 up to 31% above 40. FICO score shows the mirror image: default rate drops from 32% at the 610–650 bucket to 9% at 750+, with near-linear spacing between buckets. Both variables are available at loan approval time and are meaningful on their own even before encoding.
+
+**Loan purpose and home ownership add secondary predictive value.** Small-business loans carry a 30% default rate — more than twice the rate of wedding or car loans — despite representing a modest share of loan volume. Within each grade tier, MORTGAGE borrowers consistently default less than RENT borrowers, with the spread widening at higher-risk grades (up to 9 percentage points at grade G).
+
+**Temporal non-stationarity is present and material.** Default rates varied substantially from 2007 to 2018, dropping to 14% in the post-crisis years and climbing back toward 23% by 2016–2017. This confirms that the loan population is not stationary over time, and a production model would need periodic retraining or a time-aware evaluation strategy to remain reliable.
+
+**Random Forest is the best-performing model across all ranking metrics.** After hyperparameter tuning, it achieves a ROC-AUC of 0.7092 and PR-AUC of 0.3696, outperforming Linear SVC and Naive Bayes on both metrics. Upsampling the minority class on the training data substantially increased recall for charged-off loans across all three model families, confirming that handling class imbalance is essential for this task. Naive Bayes, while competitive on accuracy and F1, shows significantly weaker ranking quality (ROC-AUC 0.4583), making it unsuitable as a scoring model for tiered loan decisions.
 
 ### Automation
 
