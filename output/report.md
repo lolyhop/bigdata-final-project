@@ -101,173 +101,25 @@ The data model consists of one central fact table (`loans`) and two groups of de
 
 ### Core Entity
 
-```mermaid
-erDiagram
-    loans {
-        bigint id PK
-        double loan_amnt
-        int term
-        double int_rate
-        double installment
-        string grade
-        string sub_grade
-        string emp_length
-        string home_ownership
-        double annual_inc
-        string verification_status
-        string purpose
-        double dti
-        int delinq_2yrs
-        int inq_last_6mths
-        int open_acc
-        int pub_rec
-        bigint revol_bal
-        double revol_util
-        int total_acc
-        string application_type
-        int fico_range_low
-        int fico_range_high
-        date issue_d
-        date earliest_cr_line
-        string loan_status
-    }
-```
-
-
+<p align="center">
+  <img src="./report_images/er_core.png" alt="ER Diagram for core table" />
+</p>
 
 ### EDA Aggregation Tables
 
 These tables are created by Stage 2 HiveQL queries executed against the `loans` Hive table and stored as managed ORC tables in `team25_projectdb`. Their aggregated results are exported to `output/q1.csv`–`output/q6.csv` and connected to Apache Superset as datasets for visualization.
 
-```mermaid
-erDiagram
-    loans ||--o{ q1_results : "aggregated by grade"
-    loans ||--o{ q2_results : "aggregated by purpose"
-    loans ||--o{ q3_results : "aggregated by issue year"
-    loans ||--o{ q4_results : "aggregated by DTI bucket"
-    loans ||--o{ q5_results : "aggregated by grade x home_ownership"
-    loans ||--o{ q6_results : "aggregated by FICO bucket"
-
-    q1_results {
-        string grade PK
-        bigint total_loans
-        bigint defaulted
-        bigint fully_paid
-        double default_rate
-        double avg_int_rate
-    }
-
-    q2_results {
-        string purpose PK
-        bigint total_loans
-        bigint defaulted
-        double default_rate
-        double avg_loan_amnt
-    }
-
-    q3_results {
-        int issue_year PK
-        bigint total_loans
-        bigint defaulted
-        double default_rate
-        double avg_int_rate
-    }
-
-    q4_results {
-        string dti_bucket PK
-        bigint total_loans
-        bigint defaulted
-        double default_rate
-        double avg_int_rate
-    }
-
-    q5_results {
-        string grade PK
-        string home_ownership PK
-        bigint total_loans
-        double default_rate
-    }
-
-    q6_results {
-        string fico_bucket PK
-        double avg_fico
-        bigint total_loans
-        double default_rate
-    }
-```
-
-
+<p align="center">
+  <img src="./report_images/er_aggregation.png" alt="EDA Aggregation Tables" />
+</p>
 
 ### ML Result Tables
 
 These tables are populated by the Stage 3 Spark ML pipeline and registered as external Hive tables in Stage 4. They capture dataset characteristics, feature metadata, class distributions, and model evaluation results.
 
-```mermaid
-erDiagram
-    loans ||--o{ ml_split_summary : "split into train / test"
-    loans ||--o{ ml_feature_info : "features derived from"
-    loans ||--o{ ml_label_distribution : "label distribution"
-    loans ||--o{ ml_baseline_evaluation : "baseline evaluation on"
-    loans ||--o{ ml_evaluation : "tuned evaluation on"
-    loans ||--o{ ml_prediction_distribution : "predictions on"
-
-    ml_split_summary {
-        string dataset PK
-        bigint rows
-        int feature_count
-    }
-
-    ml_feature_info {
-        string feature_name PK
-        string feature_type
-    }
-
-    ml_label_distribution {
-        string dataset PK
-        double label PK
-        bigint count
-        double share
-    }
-
-    ml_baseline_evaluation {
-        string model PK
-        double accuracy
-        double precision
-        double recall
-        double f1
-        double areaUnderROC
-        double areaUnderPR
-        bigint tp
-        bigint tn
-        bigint fp
-        bigint fn
-    }
-
-    ml_evaluation {
-        string model PK
-        double accuracy
-        double precision
-        double recall
-        double f1
-        double areaUnderROC
-        double areaUnderPR
-        bigint tp
-        bigint tn
-        bigint fp
-        bigint fn
-        string best_params
-    }
-
-    ml_prediction_distribution {
-        string model PK
-        double label PK
-        double prediction PK
-        bigint count
-    }
-```
-
-
----
+<p align="center">
+  <img src="./report_images/er_ml.png" alt="ML Result Tables" />
+</p>
 
 ## Sample Data
 
@@ -288,8 +140,6 @@ LIMIT 5;
 | 68341763 | 20,000 | 60 | 10.78 | B | MORTGAGE | 63,000 | 10.78 | 695 | home\_improvement | Fully Paid | 2015-12-01 |
 | 66310712 | 35,000 | 60 | 14.85 | C | MORTGAGE | 110,000 | 17.06 | 785 | debt\_consolidation | Current | 2015-12-01 |
 | 68476807 | 10,400 | 60 | 22.45 | F | MORTGAGE | 104,433 | 25.37 | 695 | major\_purchase | Fully Paid | 2015-12-01 |
-
----
 
 ## Architecture of Data Pipeline
 
@@ -312,25 +162,9 @@ The pipeline is a five-phase, end-to-end distributed workflow. Raw data originat
 
 ### Pipeline Diagram
 
-```mermaid
-flowchart TD
-    A([Yandex Disk\nzip archive]) --> B[Preprocess\nDownload + filter to 26 cols]
-    B --> C[(dataset_filtered.csv\n2.26 M rows)]
-    C --> D[Stage 1 — Ingestion\nPostgreSQL COPY + Sqoop]
-    D --> E[(PostgreSQL\nloans table)]
-    D --> F[(HDFS\nParquet / Snappy)]
-    F --> G[Stage 2 — Storage & Prep\nHive staging → partitioned table]
-    G --> H[(Hive loans table\npartitioned by grade\nbucketed by id)]
-    H --> I[Stage 2 — EDA\n6 HiveQL queries]
-    I --> J[(ORC result tables\nq1 – q6 CSVs)]
-    H --> K[Stage 3 — Spark ML\nPrep → Encode → Train → Tune]
-    K --> L[(HDFS\nmodels + predictions\n+ evaluation CSVs)]
-    L --> M[Stage 4 — Presentation\nHive external tables → Superset]
-    J --> M
-    M --> N([Apache Superset\nInteractive Dashboard])
-```
-
-
+<p align="center">
+  <img src="./report_images/pipeline.png" alt="Pipeline Diagram" />
+</p>
 
 ### Stage Inputs and Outputs
 
@@ -412,41 +246,57 @@ Six HiveQL queries are executed against the `loans` Hive table to surface patter
 
 The bar chart (Q1) plots default rate and average interest rate for each of Lending Club's seven grade tiers (A–G). Default rate rises monotonically from 6% at grade A to 50% at grade G, and average interest rate tracks the same gradient from 7% to 28%. The parallel movement of interest rate and default rate confirms that Lending Club's pricing model accurately captures credit risk: borrowers assigned a higher-risk grade are charged proportionally higher rates. From a prediction standpoint, `grade` is the single strongest categorical predictor available at origination time, and the seven-value partition structure of the Hive table means grade-filtered queries run with no full-table scans.
 
-![Default rate and average interest rate by loan grade](q1.jpg)
+<p align="center">
+  <img src="q1.jpg" alt="Default rate and average interest rate by loan grade" />
+</p>
 
 #### Default Rate by Loan Purpose
 
 The horizontal bar chart (Q2) ranks all 14 loan purposes by default rate alongside their loan volumes. `small_business` loans carry the highest default rate at approximately 30%, followed by `renewable_energy` and `moving` at around 23%. The safest purposes are `wedding` and `car` at 12–14%. `debt_consolidation` dominates the portfolio by volume - nearly 800 thousand completed loans - yet sits at a moderate 21% default rate, close to the dataset average. The divergence between volume and risk makes purpose a useful feature: the most common loan purpose is not the riskiest, so the model must treat this as a categorical signal rather than a proxy for data density.
 
-![Loan volume by purpose](q2_1.jpg)
+<p align="center">
+  <img src="q2_1.jpg" alt="Loan volume by purpose" />
+</p>
 
-![Default rate by loan purpose](q2_2.jpg)
+<p align="center">
+  <img src="q2_2.jpg" alt="Default rate by loan purpose" />
+</p>
 
 #### Default Rate over Time
 
 The line chart (Q3) tracks completed-loan volume and default rate by issue year from 2007 to 2018. Loan issuance grew from a few thousand records in 2007 to a peak of roughly 375 thousand in 2015, then declined as the dataset ends partway through 2018. The default rate began at approximately 26% in 2007 - a small early cohort with elevated risk - dropped sharply to around 14% in 2008–2010 as post-financial-crisis underwriting tightened, and then gradually climbed back to 23% by 2016–2017 as Lending Club expanded its borrower base. The apparent decline to 16% in 2018 is an artifact of loan immaturity: recently issued loans have not had sufficient time to default, so the completed-loan filter underrepresents defaults for the most recent cohorts. 
 
-![Loan volume by issue year](q3_1.jpg)
+<p align="center">
+  <img src="q3_1.jpg" alt="Loan volume by issue year" />
+</p>
 
-![Default rate by issue year](q3_2.jpg)
+<p align="center">
+  <img src="q3_2.jpg" alt="Default rate by issue year" />
+</p>
 
 #### Default Rate by Debt-to-Income Ratio
 
 The bar chart (Q4) groups borrowers into five DTI buckets (0–10, 10–20, 20–30, 30–40, 40+) and plots the default rate for each. The relationship is near-monotonic: 15% for the lowest bucket, rising through 18%, 23%, and 29%, to 31% for DTI above 40. Each 10-point increment in DTI adds approximately 4–5 percentage points to the default rate, making DTI the strongest continuous numeric predictor in the dataset. Two known data quality issues were handled in the query: DTI values of −1 and 999, present in a small number of records, are excluded with a `dti >= 0 AND dti <= 100` filter.
 
-![Default rate by DTI bucket](q4.jpg)
+<p align="center">
+  <img src="q4.jpg" alt="Default rate by DTI bucket" />
+</p>
 
 #### Interaction Effect: Grade and Home Ownership
 
 The heatmap (Q5) shows default rates for all 21 combinations of loan grade (A–G, columns) and home ownership status (MORTGAGE, OWN, RENT, rows). The grade gradient dominates: default rates span roughly 40 percentage points across the A-to-G axis within every ownership category. Within each grade, however, home ownership provides a consistent secondary signal. MORTGAGE borrowers default least (grade A: 5.19%, grade G: 45.13%), OWN borrowers fall in the middle (6.79% to 49.86%), and RENT borrowers default most (7.34% to 54.5%). The within-grade spread across ownership categories ranges from approximately 2 percentage points at grade A to 9 percentage points at grade G, indicating that housing stability adds predictive value beyond the grade label alone, particularly for higher-risk borrowers.
 
-![Default rate heatmap: loan grade × home ownership](q5.jpg)
+<p align="center">
+  <img src="q5.jpg" alt="Default rate heatmap: loan grade × home ownership" />
+</p>
 
 #### FICO Score and Default Risk
 
 The bubble chart (Q6) plots average FICO score against default rate for six score buckets (610–650 through 750+), with bubble area proportional to the number of completed loans in each bucket. The relationship is monotonically negative and nearly linear: default rate falls from approximately 32% at the 610–650 bucket to 9% at 750+, with subsequent 25-point FICO increments reducing the default rate by around 4–5 percentage points. The 675–700 bucket is the largest, reflecting the concentration of Lending Club's borrower base in the near-prime credit range. The small 610–650 bubble confirms that very low FICO scores are rare in the accepted-loan population - consistent with Lending Club's minimum credit score requirements - but when they occur they carry a disproportionately high default rate.
 
-![Average FICO score vs default rate by FICO bucket](q6.jpg)
+<p align="center">
+  <img src="q6.jpg" alt="Average FICO score vs default rate by FICO bucket" />
+</p>
 
 ## Stage 3 - Predictive Data Analytics
 
@@ -750,3 +600,7 @@ At the same time, the project has clear limitations. A random 70/30 split was us
 | Hyperparameter tuning     | Run grid search (27 combinations per model, cross-validation, PR-AUC optimisation) for all three model families, save best models to HDFS, export predictions and evaluation metrics                                                                                           | 0%             | 100%               | 0%           | 0%                    | `models/model1` – `models/model3`, `output/dashboard/evaluation.csv`, `output/dashboard/prediction_distribution.csv`, `scripts/train_tuned_models.py`  | 3                |
 | Dashboard development     | Set up Apache Superset, register Hive and PostgreSQL datasets, build three-tab dashboard (Data Description, Data Insights, ML Modeling) with 15+ charts including bar charts, line chart, heatmap, bubble chart, and confusion matrix heatmaps                                 | 35%            | 35%                | 30%          | 0%                    | Superset dashboard, `scripts/load_ml_hive_tables.py`, `sql/ml_results.hql`                                                                             | 3                |
 | Report writing            | Document all pipeline stages, data characteristics, EDA findings, ML methodology, and results in the project report                                                                                                                                                            | 10%            | 10%                | 70%          | 10%                   | `output/report.md`                                                                                                                                     | 6                |
+<<<<<<< HEAD
+=======
+| Task Presentation         | Prepare the final project presentation             | 10%             | 10%                | 70%          | 10%                    | Project slides (PDF)                                                                                                | 4                |
+>>>>>>> 6e376b4 (Replace embedded mermaid diagrams with images (for compatibility))
