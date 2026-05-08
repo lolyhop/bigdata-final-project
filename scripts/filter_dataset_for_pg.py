@@ -1,4 +1,4 @@
-"""Stream-filter the raw Lending Club CSV down to the columns needed by PostgreSQL."""
+"""Stream-filter the raw Lending Club CSV down to the columns needed by Citus."""
 
 import csv
 import logging
@@ -118,7 +118,7 @@ def _to_numeric_string(value: str) -> str:
         value: Raw field.
 
     Returns:
-        String suitable for PostgreSQL NUMERIC, or empty.
+        String suitable for Citus NUMERIC, or empty.
     """
     if value is None or str(value).strip() == "":
         return ""

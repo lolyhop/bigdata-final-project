@@ -1,4 +1,4 @@
-"""Recreate the PostgreSQL loans table and bulk-load data from a filtered CSV."""
+"""Recreate the Citus loans table and bulk-load data from a filtered CSV."""
 
 import logging
 import sys
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def load(csv_path: Path, table_name: str) -> None:
-    """Recreate the PostgreSQL table and bulk-load data from *csv_path*.
+    """Recreate the Citus table and bulk-load data from *csv_path*.
 
     Args:
         csv_path: Preprocessed CSV file produced by ``filter_dataset_for_pg.py``.

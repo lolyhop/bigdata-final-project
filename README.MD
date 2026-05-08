@@ -2,11 +2,11 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Dataset-2.26M%20Loans-4DB6AC" />
-  <img src="https://img.shields.io/badge/PostgreSQL-Citus-1976D2" />
+  <img src="https://img.shields.io/badge/Citus-COPY-1976D2" />
   <img src="https://img.shields.io/badge/Sqoop-HDFS-FFB74D" />
-  <img src="https://img.shields.io/badge/Hive-Tez-9575CD" />
+  <img src="https://img.shields.io/badge/Hive-Parquet-9575CD" />
   <img src="https://img.shields.io/badge/Spark-MLlib-FF8A65" />
-  <img src="https://img.shields.io/badge/Superset-Dashboard-29B6F6" />
+  <img src="https://img.shields.io/badge/Apache-Superset-29B6F6" />
 </p>
 
 ## Navigation
@@ -17,16 +17,16 @@
 - [Repository Structure](#repository-structure)
 - [Pipeline Overview](#pipeline-overview)
 - [Pipeline Stages](#pipeline-stages)
--[Stage I — Data Collection and Ingestion](#stage-i--data-collection-and-ingestion)
--[Stage II — Hive Storage and EDA](#stage-ii--hive-storage-and-eda)
+- [Stage I — Data Collection and Ingestion](#stage-i--data-collection-and-ingestion)
+- [Stage II — Hive Storage and EDA](#stage-ii--hive-storage-and-eda)
 - [Stage III — Predictive Data Analytics](#stage-iii--predictive-data-analytics)
 - [Stage IV — Dashboard Preparation](#stage-iv--dashboard-preparation)
 - [Running the Full Pipeline](#running-the-full-pipeline)
--[Running Individual Stages](#running-individual-stages)
+- [Running Individual Stages](#running-individual-stages)
 - [Key Outputs](#key-outputs)
 - [Code Quality](#code-quality)
 
-End-to-end distributed pipeline for loan default prediction using PostgreSQL, Sqoop, HDFS, Hive, Spark ML on YARN, and Apache Superset.
+End-to-end distributed pipeline for loan default prediction using Citus, Sqoop, HDFS, Hive, Spark ML on YARN, and Apache Superset.
 
 This repository contains the final project for the Big Data course at Innopolis University. The project uses the Lending Club accepted loans dataset to build a reproducible big data pipeline for exploratory analytics, predictive modeling, and dashboard visualization.
 
@@ -78,7 +78,7 @@ Raw CSV
   ↓
 Preprocessing
   ↓
-PostgreSQL
+Citus
   ↓ Sqoop
 HDFS Parquet + Snappy
   ↓
@@ -99,15 +99,15 @@ The project is organized into four reproducible stages.
 
 ### Stage I — Data Collection and Ingestion
 
-This stage downloads the raw Lending Club dataset, filters and normalizes the selected columns, loads the cleaned data into PostgreSQL, and imports the table into HDFS using Sqoop. The ingested data are stored in Parquet format with Snappy compression.
+This stage downloads the raw Lending Club dataset, filters and normalizes the selected columns, loads the cleaned data into Citus, and imports the table into HDFS using Sqoop. The ingested data are stored in Parquet format with Snappy compression.
 
 **Main steps:**
 
 - download the raw dataset;
 - select loan origination-time columns;
 - normalize dates, percentages, and loan term values;
-- load cleaned data into PostgreSQL table loans;
-- import PostgreSQL data to HDFS using Sqoop;
+- load cleaned data into Citus table loans;
+- import Citus data to HDFS using Sqoop;
 - store HDFS data as Parquet with Snappy compression.
 
 **Main scripts:**
@@ -222,13 +222,12 @@ scripts/ml_utils.py
 **Main Stage III outputs:**
 
 ```text
-output/baseline_evaluation.csv  
-output/evaluation.csv  
-output/prediction_distribution.csv  
-output/sample_predictions.csv
-output/split_summary.csv  
-output/feature_info.csv  
-output/label_distribution.csv  
+output/dashboard/baseline_evaluation.csv  
+output/dashboard/evaluation.csv  
+output/dashboard/prediction_distribution.csv  
+output/dashboard/split_summary.csv  
+output/dashboard/feature_info.csv  
+output/dashboard/label_distribution.csv  
 output/dashboard/  
 models/model1/  
 models/model2/  
@@ -284,7 +283,7 @@ bash main.sh
 
 The project template requires `main.sh` to be the main entrypoint for assessment. The script runs all stages and stores final results in the repository output folders.
 
-Before running, create and configure `.env` with PostgreSQL, Hive, HDFS, and ML paths.
+Before running, create and configure `.env` with Citus, Hive, HDFS, and ML paths.
 
 Example:
 
@@ -316,13 +315,12 @@ The most important outputs for grading and dashboarding are:
 ```text
 - output/q1.csv ... output/q6.csv
 - output/dq_*.csv
-- output/baseline_evaluation.csv
-- output/evaluation.csv
-- output/prediction_distribution.csv
-- output/sample_predictions.csv
-- output/split_summary.csv
-- output/feature_info.csv
-- output/label_distribution.csv
+- output/dashboard/baseline_evaluation.csv
+- output/dashboard/evaluation.csv
+- output/dashboard/prediction_distribution.csv
+- output/dashboard/split_summary.csv
+- output/dashboard/feature_info.csv
+- output/dashboard/label_distribution.csv
 - output/dashboard/
 - models/model1/
 - models/model2/
