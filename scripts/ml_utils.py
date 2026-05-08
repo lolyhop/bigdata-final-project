@@ -2,7 +2,7 @@
 
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.sql import functions as F
-from pyspark.sql.utils import AnalysisException
+from pyspark.sql.utils import AnalysisException, ParseException
 
 
 def evaluate_binary_predictions(
@@ -83,7 +83,7 @@ def read_hive(spark, path):
 
     try:
         return spark.table(path)
-    except AnalysisException:
+    except (AnalysisException, ParseException):
         return spark.read.parquet(path)
 
 
