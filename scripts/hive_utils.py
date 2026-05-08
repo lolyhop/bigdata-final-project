@@ -84,13 +84,13 @@ def execute_hql(conn: Any, raw_hql: str) -> None:
     ]
     statements = [s.strip() for s in "\n".join(stripped_lines).split(";") if s.strip()]
 
-    cursor = conn.cursor()
-    try:
-        for sql in statements:
-            LOGGER.info("Executing: %s", sql.split("\n", 1)[0][:120])
+    for sql in statements:
+        LOGGER.info("Executing: %s", sql.split("\n", 1)[0][:120])
+        cursor = conn.cursor()
+        try:
             cursor.execute(sql)
-    finally:
-        cursor.close()
+        finally:
+            cursor.close()
 
 
 def fetch_to_csv(conn: Any, table: str, csv_path: Path) -> None:
