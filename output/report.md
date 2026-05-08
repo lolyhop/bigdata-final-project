@@ -123,23 +123,20 @@ These tables are populated by the Stage 3 Spark ML pipeline and registered as ex
 
 ## Sample Data
 
-The following rows were retrieved directly from the `loans` PostgreSQL table using the query below. They illustrate the value formats and ranges for the 12 most representative columns after preprocessing.
+The following 10 rows were retrieved from the `loans` table and illustrate the value formats and ranges across all 26 columns after preprocessing.
 
-```sql
-SELECT
-    id, loan_amnt, term, int_rate, grade, home_ownership,
-    annual_inc, dti, fico_range_low, purpose, loan_status, issue_d
-FROM loans
-LIMIT 5;
-```
-
-| id | loan\_amnt | term | int\_rate | grade | home\_ownership | annual\_inc | dti | fico\_range\_low | purpose | loan\_status | issue\_d |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 68407277 | 3,600 | 36 | 13.99 | C | MORTGAGE | 55,000 | 5.91 | 675 | debt\_consolidation | Fully Paid | 2015-12-01 |
-| 68355089 | 24,700 | 36 | 11.99 | C | MORTGAGE | 65,000 | 16.06 | 715 | small\_business | Fully Paid | 2015-12-01 |
-| 68341763 | 20,000 | 60 | 10.78 | B | MORTGAGE | 63,000 | 10.78 | 695 | home\_improvement | Fully Paid | 2015-12-01 |
-| 66310712 | 35,000 | 60 | 14.85 | C | MORTGAGE | 110,000 | 17.06 | 785 | debt\_consolidation | Current | 2015-12-01 |
-| 68476807 | 10,400 | 60 | 22.45 | F | MORTGAGE | 104,433 | 25.37 | 695 | major\_purchase | Fully Paid | 2015-12-01 |
+| id | loan\_amnt | term | int\_rate | installment | grade | sub\_grade | emp\_length | home\_ownership | annual\_inc | verification\_status | purpose | dti | delinq\_2yrs | inq\_last\_6mths | open\_acc | pub\_rec | revol\_bal | revol\_util | total\_acc | application\_type | fico\_range\_low | fico\_range\_high | issue\_d | earliest\_cr\_line | loan\_status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 68476807 | 10400 | 60 | 22.45 | 289.91 | F | F1 | 3 years | MORTGAGE | 104433 | Source Verified | major\_purchase | 25.37 | 1 | 3 | 12 | 0 | 21929 | 64.5 | 35 | Individual | 695 | 699 | 2015-12-01 | 1998-06-01 | Fully Paid |
+| 68466926 | 10000 | 36 | 6.49 | 306.45 | A | A2 | 6 years | RENT | 85000 | Not Verified | credit\_card | 13.07 | 0 | 1 | 14 | 1 | 10464 | 34.5 | 23 | Individual | 685 | 689 | 2015-12-01 | 2002-04-01 | Fully Paid |
+| 68407277 | 3600 | 36 | 13.99 | 123.03 | C | C4 | 10+ years | MORTGAGE | 55000 | Not Verified | debt\_consolidation | 5.91 | 0 | 1 | 7 | 0 | 2765 | 29.7 | 13 | Individual | 675 | 679 | 2015-12-01 | 2003-08-01 | Fully Paid |
+| 68616873 | 8000 | 36 | 11.48 | 263.74 | B | B5 | 10+ years | MORTGAGE | 42000 | Not Verified | credit\_card | 34.8 | 0 | 0 | 8 | 0 | 7034 | 39.1 | 18 | Individual | 700 | 704 | 2015-12-01 | 1994-11-01 | Fully Paid |
+| 68341763 | 20000 | 60 | 10.78 | 432.66 | B | B4 | 10+ years | MORTGAGE | 63000 | Not Verified | home\_improvement | 10.78 | 0 | 0 | 6 | 0 | 7869 | 56.2 | 18 | Joint App | 695 | 699 | 2015-12-01 | 2000-08-01 | Fully Paid |
+| 68426831 | 11950 | 36 | 13.44 | 405.18 | C | C3 | 4 years | RENT | 34000 | Source Verified | debt\_consolidation | 10.2 | 0 | 0 | 5 | 0 | 8822 | 68.4 | 6 | Individual | 690 | 694 | 2015-12-01 | 1987-10-01 | Fully Paid |
+| 67275481 | 20000 | 36 | 8.49 | 631.26 | B | B1 | 10+ years | MORTGAGE | 85000 | Not Verified | major\_purchase | 17.61 | 1 | 0 | 8 | 0 | 826 | 5.7 | 15 | Individual | 705 | 709 | 2015-12-01 | 1999-02-01 | Fully Paid |
+| 68355089 | 24700 | 36 | 11.99 | 820.28 | C | C1 | 10+ years | MORTGAGE | 65000 | Not Verified | small\_business | 16.06 | 1 | 4 | 22 | 0 | 21470 | 19.2 | 38 | Individual | 715 | 719 | 2015-12-01 | 1999-12-01 | Fully Paid |
+| 68476668 | 20000 | 36 | 9.17 | 637.58 | B | B2 | 10+ years | MORTGAGE | 180000 | Not Verified | debt\_consolidation | 14.67 | 0 | 0 | 12 | 0 | 87329 | 84.5 | 27 | Individual | 680 | 684 | 2015-12-01 | 1990-06-01 | Fully Paid |
+| 66310712 | 35000 | 60 | 14.85 | 829.9 | C | C5 | 10+ years | MORTGAGE | 110000 | Source Verified | debt\_consolidation | 17.06 | 0 | 0 | 13 | 0 | 7802 | 11.6 | 17 | Individual | 785 | 789 | 2015-12-01 | 2008-09-01 | Current |
 
 ## Architecture of Data Pipeline
 

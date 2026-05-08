@@ -50,6 +50,7 @@ ML_EVALUATION_PATH = os.environ.get("ML_EVALUATION_PATH")
 ML_CV_FOLDS = int(os.environ.get("ML_CV_FOLDS"))
 ML_CV_PARALLELISM = int(os.environ.get("ML_CV_PARALLELISM"))
 ML_OPTIMIZATION_METRIC = os.environ.get("ML_OPTIMIZATION_METRIC")
+SEED = int(os.environ.get("SEED", "42"))
 
 
 def build_spark():
@@ -104,7 +105,7 @@ def tune_random_forest(train_df, test_df):
     rf = RandomForestClassifier(
         labelCol="label",
         featuresCol="features",
-        seed=42,
+        seed=SEED,
     )
 
     param_grid = (
@@ -127,6 +128,7 @@ def tune_random_forest(train_df, test_df):
         evaluator=evaluator,
         numFolds=ML_CV_FOLDS,
         parallelism=ML_CV_PARALLELISM,
+        seed=SEED,
     )
 
     cv_model = cv.fit(train_df)
@@ -171,6 +173,7 @@ def tune_linear_svc(train_df, test_df):
         evaluator=evaluator,
         numFolds=ML_CV_FOLDS,
         parallelism=ML_CV_PARALLELISM,
+        seed=SEED,
     )
 
     cv_model = cv.fit(train_df)
@@ -223,6 +226,7 @@ def tune_naive_bayes(train_df, test_df):
         evaluator=evaluator,
         numFolds=ML_CV_FOLDS,
         parallelism=ML_CV_PARALLELISM,
+        seed=SEED,
     )
 
     cv_model = cv.fit(train_df)
