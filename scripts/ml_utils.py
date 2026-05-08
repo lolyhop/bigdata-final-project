@@ -2,7 +2,7 @@
 
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.sql import functions as F
-from pyspark.errors import AnalysisException
+from pyspark.sql.utils import AnalysisException
 
 
 def evaluate_binary_predictions(
