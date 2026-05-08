@@ -11,7 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hive_utils  # pylint: disable=wrong-import-position
 import settings  # pylint: disable=wrong-import-position
 
-_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "output"
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_OUTPUT_DIR = _REPO_ROOT / "output"
 LOGGER = logging.getLogger(__name__)
 
 
