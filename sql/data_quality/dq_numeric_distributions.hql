@@ -5,7 +5,7 @@ STORED AS ORC
 AS
 WITH base AS (
     SELECT *
-    FROM team25_projectdb.loans
+    FROM loans
 ),
 total AS (
     SELECT COUNT(*) AS total_rows
