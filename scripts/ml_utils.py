@@ -2,6 +2,7 @@
 
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.sql import functions as F
+from pyspark.errors import AnalysisException
 
 
 def evaluate_binary_predictions(
@@ -74,14 +75,17 @@ def evaluate_binary_predictions(
         "fn": fn,
     }
 
+
 def read_hive(spark, path):
     """
     Reads a Spark DataFrame from a Hive table using the provided path.
     """
+
     try:
         return spark.table(path)
-    except Exception:
+    except AnalysisException:
         return spark.read.parquet(path)
+
 
 def save_metrics_csv(spark, model_name, metrics, best_params, output_path):
     """Write a single-row metrics CSV for *model_name* to *output_path*.
