@@ -43,7 +43,7 @@ ML_TRAIN_BALANCED_PATH = os.environ.get(
 
 TRAIN_RATIO = float(os.environ.get("ML_TRAIN_RATIO", "0.7"))
 TEST_RATIO = 1.0 - TRAIN_RATIO
-SPLIT_SEED = int(os.environ.get("ML_SPLIT_SEED", "42"))
+SEED = int(os.environ.get("SEED", "42"))
 
 ML_SPLIT_SUMMARY_PATH = os.environ.get("ML_SPLIT_SUMMARY_PATH")
 ML_FEATURE_INFO_PATH = os.environ.get("ML_FEATURE_INFO_PATH")
@@ -310,7 +310,7 @@ def balance_train_dataset(train_df):
     pieces = [minority_df] * max(whole, 1)
     if frac > 0:
         pieces.append(
-            minority_df.sample(withReplacement=True, fraction=frac, seed=SPLIT_SEED)
+            minority_df.sample(withReplacement=True, fraction=frac, seed=SEED)
         )
 
     upsampled_minority = pieces[0]
@@ -319,7 +319,7 @@ def balance_train_dataset(train_df):
 
     balanced_df = majority_df.union(upsampled_minority)
 
-    return balanced_df.orderBy(F.rand(seed=SPLIT_SEED))
+    return balanced_df.orderBy(F.rand(seed=SEED))
 
 
 def save_json_artifact(df, output_path):
@@ -352,7 +352,7 @@ def main():
 
     full_label_distribution_df = build_label_distribution_df(df, "full_prepared_raw")
 
-    train_raw, test_raw = df.randomSplit([TRAIN_RATIO, TEST_RATIO], seed=SPLIT_SEED)
+    train_raw, test_raw = df.randomSplit([TRAIN_RATIO, TEST_RATIO], seed=SEED)
 
     train_raw_count = train_raw.count()
     test_raw_count = test_raw.count()
