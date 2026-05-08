@@ -7,8 +7,10 @@ from pyspark.ml import Pipeline
 from pyspark.ml.classification import LinearSVC, NaiveBayes, RandomForestClassifier
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.feature import MinMaxScaler
+from pyspark.ml.functions import vector_to_array
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 
 from ml_utils import (
     build_prediction_distribution_df,
@@ -22,6 +24,7 @@ from ml_utils import (
 load_dotenv()
 ML_TRAIN_ENCODED_PATH = os.environ.get("ML_TRAIN_ENCODED_PATH")
 ML_TEST_ENCODED_PATH = os.environ.get("ML_TEST_ENCODED_PATH")
+ML_TEST_RAW_PATH = os.environ.get("ML_TEST_RAW_PATH")
 
 ML_MODEL1_PATH = os.environ.get("ML_MODEL1_PATH")
 ML_MODEL2_PATH = os.environ.get("ML_MODEL2_PATH")
@@ -35,13 +38,18 @@ ML_MODEL1_METRICS_PATH = os.environ.get("ML_MODEL1_METRICS_PATH")
 ML_MODEL2_METRICS_PATH = os.environ.get("ML_MODEL2_METRICS_PATH")
 ML_MODEL3_METRICS_PATH = os.environ.get("ML_MODEL3_METRICS_PATH")
 ML_PREDICTION_DISTRIBUTION_PATH = os.environ.get("ML_PREDICTION_DISTRIBUTION_PATH")
+ML_SAMPLE_PREDICTIONS_PATH = os.environ.get("ML_SAMPLE_PREDICTIONS_PATH")
+if not ML_SAMPLE_PREDICTIONS_PATH and ML_PREDICTION_DISTRIBUTION_PATH:
+    ML_SAMPLE_PREDICTIONS_PATH = os.path.join(
+        os.path.dirname(ML_PREDICTION_DISTRIBUTION_PATH),
+        "sample_predictions",
+    )
 
 ML_EVALUATION_PATH = os.environ.get("ML_EVALUATION_PATH")
 
 ML_CV_FOLDS = int(os.environ.get("ML_CV_FOLDS"))
 ML_CV_PARALLELISM = int(os.environ.get("ML_CV_PARALLELISM"))
 ML_OPTIMIZATION_METRIC = os.environ.get("ML_OPTIMIZATION_METRIC")
-SEED = int(os.environ.get("SEED", "42"))
 
 
 def build_spark():
@@ -96,7 +104,7 @@ def tune_random_forest(train_df, test_df):
     rf = RandomForestClassifier(
         labelCol="label",
         featuresCol="features",
-        seed=SEED,
+        seed=42,
     )
 
     param_grid = (
@@ -119,7 +127,6 @@ def tune_random_forest(train_df, test_df):
         evaluator=evaluator,
         numFolds=ML_CV_FOLDS,
         parallelism=ML_CV_PARALLELISM,
-        seed=SEED,
     )
 
     cv_model = cv.fit(train_df)
@@ -164,7 +171,6 @@ def tune_linear_svc(train_df, test_df):
         evaluator=evaluator,
         numFolds=ML_CV_FOLDS,
         parallelism=ML_CV_PARALLELISM,
-        seed=SEED,
     )
 
     cv_model = cv.fit(train_df)
@@ -217,7 +223,6 @@ def tune_naive_bayes(train_df, test_df):
         evaluator=evaluator,
         numFolds=ML_CV_FOLDS,
         parallelism=ML_CV_PARALLELISM,
-        seed=SEED,
     )
 
     cv_model = cv.fit(train_df)
@@ -225,6 +230,94 @@ def tune_naive_bayes(train_df, test_df):
     metrics = evaluate_binary_predictions(predictions)
 
     return cv_model, predictions, metrics
+
+
+def prediction_label_expr(prediction_col):
+    """Return a human-readable class label expression for a prediction column."""
+    return (
+        F.when(F.col(prediction_col) == F.lit(1.0), F.lit("Charged Off"))
+        .otherwise(F.lit("Fully Paid"))
+    )
+
+
+def select_sample_prediction_columns(predictions, model_prefix):
+    """Select compact per-model prediction columns for the sample export.
+
+    Args:
+        predictions: Model predictions DataFrame containing ``id`` and ``prediction``.
+        model_prefix: Prefix used in output column names.
+
+    Returns:
+        DataFrame with ``id`` and renamed prediction/score columns.
+    """
+    prediction_col = f"{model_prefix}_prediction"
+    output_cols = [
+        F.col("id"),
+        F.col("prediction").alias(prediction_col),
+        prediction_label_expr("prediction").alias(f"{model_prefix}_predicted_status"),
+    ]
+
+    if "probability" in predictions.columns:
+        output_cols.append(
+            vector_to_array("probability")[1].alias(
+                f"{model_prefix}_probability_charged_off"
+            )
+        )
+
+    if "rawPrediction" in predictions.columns:
+        output_cols.append(
+            vector_to_array("rawPrediction")[1].alias(
+                f"{model_prefix}_score_charged_off"
+            )
+        )
+
+    return predictions.select(*output_cols)
+
+
+def save_sample_predictions(
+    spark,
+    rf_predictions,
+    svm_predictions,
+    nb_predictions,
+):
+    """Export ten full-format test examples with predictions from all tuned models."""
+    if not ML_SAMPLE_PREDICTIONS_PATH:
+        print("ML_SAMPLE_PREDICTIONS_PATH is not set; skipping sample prediction export")
+        return
+
+    print("Reading raw test dataset from:", ML_TEST_RAW_PATH)
+    raw_test_df = spark.read.parquet(ML_TEST_RAW_PATH)
+
+    sample_df = (
+        raw_test_df.orderBy("id")
+        .limit(10)
+        .withColumnRenamed("loan_status", "actual_status")
+        .withColumnRenamed("label", "actual_label")
+    )
+    sample_columns = sample_df.columns
+
+    rf_sample = select_sample_prediction_columns(rf_predictions, "random_forest")
+    svm_sample = select_sample_prediction_columns(svm_predictions, "linear_svc")
+    nb_sample = select_sample_prediction_columns(nb_predictions, "naive_bayes")
+
+    sample_predictions_df = (
+        sample_df.join(rf_sample, on="id", how="left")
+        .join(svm_sample, on="id", how="left")
+        .join(nb_sample, on="id", how="left")
+    )
+
+    prediction_columns = [
+        col for col in sample_predictions_df.columns if col not in sample_columns
+    ]
+
+    print("Saving full-format sample predictions to:", ML_SAMPLE_PREDICTIONS_PATH)
+    (
+        sample_predictions_df.select(sample_columns + prediction_columns)
+        .coalesce(1)
+        .write.mode("overwrite")
+        .option("header", "true")
+        .csv(ML_SAMPLE_PREDICTIONS_PATH)
+    )
 
 
 def main():
@@ -387,6 +480,13 @@ def main():
         .write.mode("overwrite")
         .option("header", "true")
         .csv(ML_PREDICTION_DISTRIBUTION_PATH)
+    )
+
+    save_sample_predictions(
+        spark,
+        rf_predictions=rf_predictions,
+        svm_predictions=svm_predictions,
+        nb_predictions=nb_predictions,
     )
 
     print("\nTuned models are trained and evaluated")

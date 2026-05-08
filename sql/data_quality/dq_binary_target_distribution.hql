@@ -10,7 +10,7 @@ WITH binary_loans AS (
             WHEN loan_status = 'Charged Off' THEN 1
             WHEN loan_status = 'Fully Paid' THEN 0
         END AS label
-    FROM loans
+    FROM team25_projectdb.loans
     WHERE loan_status IN ('Fully Paid', 'Charged Off')
 ),
 total AS (

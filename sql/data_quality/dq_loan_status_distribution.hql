@@ -5,13 +5,13 @@ STORED AS ORC
 AS
 WITH total AS (
     SELECT COUNT(*) AS total_rows
-    FROM loans
+    FROM team25_projectdb.loans
 )
 SELECT
     COALESCE(loan_status, 'NULL') AS loan_status,
     COUNT(*) AS count,
     ROUND(COUNT(*) / MAX(total.total_rows) * 100, 4) AS share_pct
-FROM loans
+FROM team25_projectdb.loans
 CROSS JOIN total
 GROUP BY COALESCE(loan_status, 'NULL')
 ORDER BY count DESC;

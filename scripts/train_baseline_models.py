@@ -24,8 +24,6 @@ ML_BASELINE_NB_METRICS_PATH = os.environ.get("ML_BASELINE_NB_METRICS_PATH")
 
 ML_BASELINE_EVALUATION_PATH = os.environ.get("ML_BASELINE_EVALUATION_PATH")
 
-SEED = int(os.environ.get("SEED", "42"))
-
 
 def build_spark():
     """Create and return a Spark session connected to YARN.
@@ -55,7 +53,7 @@ def train_random_forest(train_df, test_df):
         featuresCol="features",
         numTrees=10,
         maxDepth=3,
-        seed=SEED,
+        seed=42,
     ).fit(train_df)
 
     predictions = model.transform(test_df)

@@ -225,6 +225,7 @@ scripts/ml_utils.py
 output/baseline_evaluation.csv  
 output/evaluation.csv  
 output/prediction_distribution.csv  
+output/sample_predictions.csv
 output/split_summary.csv  
 output/feature_info.csv  
 output/label_distribution.csv  
@@ -318,6 +319,7 @@ The most important outputs for grading and dashboarding are:
 - output/baseline_evaluation.csv
 - output/evaluation.csv
 - output/prediction_distribution.csv
+- output/sample_predictions.csv
 - output/split_summary.csv
 - output/feature_info.csv
 - output/label_distribution.csv
