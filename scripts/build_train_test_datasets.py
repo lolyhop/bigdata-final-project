@@ -41,9 +41,9 @@ ML_TRAIN_BALANCED_PATH = os.environ.get(
     "ML_TRAIN_BALANCED_PATH",
 )
 
-TRAIN_RATIO = float(os.environ.get("ML_TRAIN_RATIO", "0.7"))
-TEST_RATIO = 1.0 - TRAIN_RATIO
-SEED = int(os.environ.get("SEED", "42"))
+SPLIT_SEED = int(os.environ.get("SEED"))
+TEMPORAL_SPLIT_DATE = os.environ.get("ML_TEMPORAL_SPLIT_DATE").strip()
+MIN_TRAIN_RATIO = float(os.environ.get("ML_MIN_TRAIN_RATIO"))
 
 ML_SPLIT_SUMMARY_PATH = os.environ.get("ML_SPLIT_SUMMARY_PATH")
 ML_FEATURE_INFO_PATH = os.environ.get("ML_FEATURE_INFO_PATH")
@@ -97,13 +97,13 @@ def build_label_distribution_df(df, dataset_name):
     return distribution_df
 
 
-def build_split_summary_df(
-    spark: "SparkSession",
-    train_raw_count: int,
-    test_raw_count: int,
-    train_encoded_count: int,
-    test_encoded_count: int,
-    feature_count: int,
+def build_split_summary_df(  # pylint: disable=too-many-positional-arguments
+    spark,
+    train_raw_count,
+    test_raw_count,
+    train_encoded_count,
+    test_encoded_count,
+    feature_count,
 ):
     """Return a DataFrame summarising dataset split row counts.
 
@@ -147,6 +147,54 @@ def build_feature_info_df(spark, numeric_cols, categorical_cols):
     ]
 
     return spark.createDataFrame(rows, ["feature_name", "feature_type"])
+
+
+def split_train_test(df):
+    """Split rows by issue date into historical train and future test sets."""
+    if "issue_d" not in df.columns:
+        raise ValueError(
+            "Temporal split requires issue_d in the prepared dataset. "
+            "Re-run scripts/prepare_raw_ml_dataset.py after updating it."
+        )
+
+    cutoff = F.lit(TEMPORAL_SPLIT_DATE).cast("date")
+    train_raw = df.filter(F.col("issue_d") < cutoff)
+    test_raw = df.filter(F.col("issue_d") >= cutoff)
+
+    full_count = df.count()
+    train_count = train_raw.count()
+    test_count = test_raw.count()
+    assigned_count = train_count + test_count
+    train_share = train_count / float(assigned_count) if assigned_count else 0.0
+
+    print(
+        "\nUsing temporal train/test split:",
+        f"train issue_d < {TEMPORAL_SPLIT_DATE}",
+        f"test issue_d >= {TEMPORAL_SPLIT_DATE}",
+    )
+    print(
+        "Temporal split rows:",
+        f"train={train_count}",
+        f"test={test_count}",
+        f"train_share={train_share:.4f}",
+    )
+
+    if assigned_count != full_count:
+        raise ValueError(
+            f"Temporal split assigned {assigned_count} of {full_count} rows. "
+            "Check issue_d values."
+        )
+    if train_count == 0 or test_count == 0:
+        raise ValueError(
+            f"Temporal split produced an empty split. Cutoff={TEMPORAL_SPLIT_DATE!r}."
+        )
+    if train_share < MIN_TRAIN_RATIO:
+        raise ValueError(
+            f"Train share is {train_share:.4f}, required {MIN_TRAIN_RATIO:.4f}. "
+            "Move ML_TEMPORAL_SPLIT_DATE later."
+        )
+
+    return train_raw, test_raw
 
 
 def get_feature_columns():
@@ -310,7 +358,7 @@ def balance_train_dataset(train_df):
     pieces = [minority_df] * max(whole, 1)
     if frac > 0:
         pieces.append(
-            minority_df.sample(withReplacement=True, fraction=frac, seed=SEED)
+            minority_df.sample(withReplacement=True, fraction=frac, seed=SPLIT_SEED)
         )
 
     upsampled_minority = pieces[0]
@@ -319,7 +367,7 @@ def balance_train_dataset(train_df):
 
     balanced_df = majority_df.union(upsampled_minority)
 
-    return balanced_df.orderBy(F.rand(seed=SEED))
+    return balanced_df.orderBy(F.rand(seed=SPLIT_SEED))
 
 
 def save_json_artifact(df, output_path):
@@ -352,7 +400,7 @@ def main():
 
     full_label_distribution_df = build_label_distribution_df(df, "full_prepared_raw")
 
-    train_raw, test_raw = df.randomSplit([TRAIN_RATIO, TEST_RATIO], seed=SEED)
+    train_raw, test_raw = split_train_test(df)
 
     train_raw_count = train_raw.count()
     test_raw_count = test_raw.count()
