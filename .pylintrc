@@ -1,3 +1,6 @@
+[MASTER]
+ignore-paths = scripts/.ipynb_checkpoints
+
 [MESSAGES CONTROL]
 disable =
     # Boilerplate exception-handling blocks in scripts are intentional.

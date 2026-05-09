@@ -7,10 +7,11 @@ from pyspark.ml import Pipeline
 from pyspark.ml.classification import LinearSVC, NaiveBayes, RandomForestClassifier
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.feature import MinMaxScaler
-from pyspark.ml.functions import vector_to_array
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.functions import udf
+from pyspark.sql.types import ArrayType, DoubleType
 
 from ml_utils import (
     build_prediction_distribution_df,
@@ -51,6 +52,8 @@ ML_CV_FOLDS = int(os.environ.get("ML_CV_FOLDS"))
 ML_CV_PARALLELISM = int(os.environ.get("ML_CV_PARALLELISM"))
 ML_OPTIMIZATION_METRIC = os.environ.get("ML_OPTIMIZATION_METRIC")
 SEED = int(os.environ.get("SEED", "42"))
+
+vector_to_array = udf(lambda v: v.toArray().tolist(), ArrayType(DoubleType()))
 
 
 def build_spark():

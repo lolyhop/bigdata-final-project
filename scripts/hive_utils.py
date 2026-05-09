@@ -3,7 +3,7 @@
 import csv
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 from pyhive import hive
 
@@ -47,7 +47,7 @@ def open_connection(*, database: str) -> Any:
         OSError: If the network connection fails.
     """
     auth = settings.HIVE_AUTH
-    connect_kwargs: dict[str, Any] = {
+    connect_kwargs: Dict[str, Any] = {
         "host": settings.HIVE_HOST,
         "port": settings.HIVE_PORT,
         "database": database,
