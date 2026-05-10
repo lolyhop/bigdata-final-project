@@ -34,7 +34,7 @@ This project addresses three business objectives that are important for real-wor
 
 1. **Reduce expected losses from loan defaults.**
 
-The first objective is to identify risky loan applications before a loan is issued. If a lender can estimate default risk at the approval stage, it can make safer decisions, apply stricter verification to suspicious applications, or adjust loan terms. This objective is supported by the[Office of the Comptroller of the Currency (OCC)](https://www.occ.treas.gov/news-issuances/congressional-testimony/2011/pub-test-2011-92-written.pdf), a U.S. regulator that supervises national banks. The OCC explains that credit risk is one of the most important risks for banks and notes that loan losses have historically been a major reason for bank failures. 
+The first objective is to identify risky loan applications before a loan is issued. If a lender can estimate default risk at the approval stage, it can make safer decisions, apply stricter verification to suspicious applications, or adjust loan terms. This objective is supported by the [Office of the Comptroller of the Currency (OCC)](https://www.occ.treas.gov/news-issuances/congressional-testimony/2011/pub-test-2011-92-written.pdf), a U.S. regulator that supervises national banks. The OCC explains that credit risk is one of the most important risks for banks and notes that loan losses have historically been a major reason for bank failures. 
 
 2. **Make underwriting decisions more consistent and transparent.**
 
