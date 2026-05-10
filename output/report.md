@@ -42,7 +42,7 @@ The second objective is to reduce reliance on ad hoc human judgment and make app
 
 3. **Provide clear portfolio-level analytics for stakeholders.**
 
-The third objective is to help managers and analysts understand overall portfolio quality, default patterns, and changes over time. In practice, this means building a reproducible pipeline that produces reliable metrics and dashboard-ready outputs. This idea is consistent with the principles of the[Basel Committee on Banking Supervision (BCBS 239)](https://www.bis.org/publ/bcbs239.pdf), which emphasize that financial institutions should have accurate risk data and clear internal risk reporting to support better decision-making.
+The third objective is to help managers and analysts understand overall portfolio quality, default patterns, and changes over time. In practice, this means building a reproducible pipeline that produces reliable metrics and dashboard-ready outputs. This idea is consistent with the principles of the [Basel Committee on Banking Supervision (BCBS 239)](https://www.bis.org/publ/bcbs239.pdf), which emphasize that financial institutions should have accurate risk data and clear internal risk reporting to support better decision-making.
 
 All three objectives are addressed through the binary classification pipeline described in the following sections.
 
