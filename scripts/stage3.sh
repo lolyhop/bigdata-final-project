@@ -16,9 +16,6 @@ set -a
 source "$PROJECT_ROOT/.env"
 set +a
 
-ML_SAMPLE_PREDICTIONS_PATH="${ML_SAMPLE_PREDICTIONS_PATH:-${ML_PREDICTION_DISTRIBUTION_PATH%/*}/sample_predictions}"
-export ML_SAMPLE_PREDICTIONS_PATH
-
 export PYSPARK_PYTHON=python3
 
 SPARK_SUBMIT="/usr/bin/spark-submit"
@@ -146,7 +143,6 @@ echo "Main outputs:"
 echo "- output/evaluation.csv"
 echo "- output/baseline_evaluation.csv"
 echo "- output/prediction_distribution.csv"
-echo "- output/sample_predictions.csv"
 echo "- output/dashboard/"
 echo "- data/train.json"
 echo "- data/test.json"

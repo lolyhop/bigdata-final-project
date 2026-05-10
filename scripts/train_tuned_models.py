@@ -489,13 +489,6 @@ def main():
         .csv(ML_PREDICTION_DISTRIBUTION_PATH)
     )
 
-    save_sample_predictions(
-        spark,
-        rf_predictions=rf_predictions,
-        svm_predictions=svm_predictions,
-        nb_predictions=nb_predictions,
-    )
-
     print("\nTuned models are trained and evaluated")
     spark.stop()
 
