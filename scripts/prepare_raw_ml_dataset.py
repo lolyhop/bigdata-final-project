@@ -106,7 +106,6 @@ def select_and_prepare_rows(df):
         "id",
         "loan_status",
         "label",
-        "issue_d",
         # numeric
         "loan_amnt",
         "term",
