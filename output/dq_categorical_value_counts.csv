@@ -1,0 +1,80 @@
+dq_categorical_value_counts_results.feature,dq_categorical_value_counts_results.value,dq_categorical_value_counts_results.count,dq_categorical_value_counts_results.share_pct
+application_type,Individual,2139958,94.6604
+application_type,Joint App,120710,5.3396
+emp_length,1 year,148403,6.5646
+emp_length,10+ years,748005,33.0878
+emp_length,2 years,203677,9.0096
+emp_length,3 years,180753,7.9956
+emp_length,4 years,136605,6.0427
+emp_length,5 years,139698,6.1795
+emp_length,6 years,102628,4.5397
+emp_length,7 years,92695,4.1003
+emp_length,8 years,91914,4.0658
+emp_length,9 years,79395,3.512
+emp_length,< 1 year,189988,8.4041
+emp_length,NULL,146907,6.4984
+grade,A,433027,19.1548
+grade,B,663557,29.3523
+grade,C,650053,28.7549
+grade,D,324424,14.3508
+grade,E,135639,6.0
+grade,F,41800,1.849
+grade,G,12168,0.5382
+home_ownership,ANY,996,0.0441
+home_ownership,MORTGAGE,1111450,49.1647
+home_ownership,NONE,54,0.0024
+home_ownership,OTHER,182,0.0081
+home_ownership,OWN,253057,11.1939
+home_ownership,RENT,894929,39.5869
+purpose,car,24013,1.0622
+purpose,credit_card,516971,22.8681
+purpose,debt_consolidation,1277877,56.5265
+purpose,educational,424,0.0188
+purpose,home_improvement,150457,6.6554
+purpose,house,14136,0.6253
+purpose,major_purchase,50445,2.2314
+purpose,medical,27488,1.2159
+purpose,moving,15403,0.6813
+purpose,other,139440,6.1681
+purpose,renewable_energy,1445,0.0639
+purpose,small_business,24689,1.0921
+purpose,vacation,15525,0.6867
+purpose,wedding,2355,0.1042
+sub_grade,A1,86790,3.8391
+sub_grade,A2,69562,3.0771
+sub_grade,A3,73184,3.2373
+sub_grade,A4,95874,4.241
+sub_grade,A5,107617,4.7604
+sub_grade,B1,125341,5.5444
+sub_grade,B2,126621,5.601
+sub_grade,B3,131514,5.8175
+sub_grade,B4,139793,6.1837
+sub_grade,B5,140288,6.2056
+sub_grade,C1,145903,6.454
+sub_grade,C2,131116,5.7999
+sub_grade,C3,129193,5.7148
+sub_grade,C4,127115,5.6229
+sub_grade,C5,116726,5.1633
+sub_grade,D1,81787,3.6178
+sub_grade,D2,72899,3.2247
+sub_grade,D3,64819,2.8672
+sub_grade,D4,56896,2.5168
+sub_grade,D5,48023,2.1243
+sub_grade,E1,33573,1.4851
+sub_grade,E2,29924,1.3237
+sub_grade,E3,26708,1.1814
+sub_grade,E4,22763,1.0069
+sub_grade,E5,22671,1.0028
+sub_grade,F1,13413,0.5933
+sub_grade,F2,9305,0.4116
+sub_grade,F3,7791,0.3446
+sub_grade,F4,6124,0.2709
+sub_grade,F5,5167,0.2286
+sub_grade,G1,4106,0.1816
+sub_grade,G2,2688,0.1189
+sub_grade,G3,2094,0.0926
+sub_grade,G4,1712,0.0757
+sub_grade,G5,1568,0.0694
+verification_status,Not Verified,744806,32.9463
+verification_status,Source Verified,886231,39.2022
+verification_status,Verified,629631,27.8515

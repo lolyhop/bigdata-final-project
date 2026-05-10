@@ -365,6 +365,8 @@ The baseline evaluation results are shown below.
 | Naive Bayes   | 0.6167   | 0.2993    | 0.6830 | 0.4162 | 0.4594  | 0.1867 |
 
 
+The baseline results show that training on the balanced training split significantly increases recall for the positive class across all three models. This means that even baseline models are able to identify a much larger share of charged-off loans compared to the earlier unbalanced setup. However, this comes with lower accuracy and precision because the models produce more positive-class predictions. Therefore, accuracy alone remains insufficient for evaluating this task, and the main focus is placed on recall, F1, ROC-AUC, and PR-AUC.
+
 ### Hyperparameter Tuning and Cross-Validation
 
 After baseline evaluation, the models are optimized using grid search with k-fold cross-validation. The tuning script `train_tuned_models.py` uses Spark ML’s `ParamGridBuilder` and `CrossValidator`. Cross-validation is performed only on the training dataset, and the test dataset is used only once for final evaluation of the selected best models. 
@@ -419,6 +421,8 @@ Random Forest is selected as the best overall model because it achieves the high
 
 The confusion-style prediction distribution is exported to `prediction_distribution.csv`, which allows the dashboard to display true positives, true negatives, false positives, and false negatives for each tuned model.
 
+To make the prediction workflow inspectable at the level of individual records, Stage III also exports `sample_predictions.csv`. This file contains the first 10 test-set loan examples in full format: original selected loan features, actual outcome, actual binary label, and the predictions from Random Forest, Linear SVC, and Naive Bayes. For models that expose probabilities or raw prediction scores, the file also includes the charged-off probability or score. This artifact is used as the specific data sample prediction evidence required for the PDA stage.
+
 ### Stage III Outputs
 
 The Stage III scripts produce both HDFS artifacts and local repository artifacts.
@@ -441,6 +445,7 @@ The main HDFS outputs are:
 | `ML_MODEL3_PRED_PATH`             | Naive Bayes predictions                |
 | `ML_EVALUATION_PATH`              | final tuned model comparison           |
 | `ML_PREDICTION_DISTRIBUTION_PATH` | prediction distribution summary        |
+| `ML_SAMPLE_PREDICTIONS_PATH`      | full-format predictions for 10 test samples |
 
 
 The local dashboard-ready CSV files are exported to `output/dashboard/`:
@@ -457,6 +462,8 @@ The local dashboard-ready CSV files are exported to `output/dashboard/`:
 
 
 These outputs are used by the Apache Superset dashboard to visualize dataset characteristics, class balance, baseline and tuned model performance, and prediction behavior.
+
+In addition, `output/sample_predictions.csv` is exported as a report artifact with full-format prediction examples for 10 test loans.
 
 ### Automation
 

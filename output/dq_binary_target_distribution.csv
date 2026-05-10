@@ -1,0 +1,3 @@
+dq_binary_target_distribution_results.label,dq_binary_target_distribution_results.loan_status,dq_binary_target_distribution_results.count,dq_binary_target_distribution_results.share_pct
+0,Fully Paid,1076751,80.0374
+1,Charged Off,268559,19.9626
